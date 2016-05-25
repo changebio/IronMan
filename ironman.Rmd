@@ -1,0 +1,310 @@
+---
+title: "ironman"
+author: "hy"
+date: "5/6/2016"
+output: html_document
+---
+
+```{r}
+#load packages
+library("ggplot2", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.2")
+library("reshape2", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.2")
+
+```
+```{r}
+
+rep.row<-function(x,n){
+   matrix(rep(x,each=n),nrow=n)
+}
+rep.col<-function(x,n){
+   matrix(rep(x,each=n), ncol=n, byrow=TRUE)
+}
+#rep.row(c(1,2,3,4),5)
+#rep.col(c(1,2,3,4),5)
+
+overlap<- function(rbed,cbed,FUN=sum,lap=TRUE){
+  rlap<- rep(0,nrow(rbed))
+  clap<- rep(0,nrow(cbed))
+  rl<- list()
+  cl<- list()
+  for(chr in intersect(levels(rbed[,1]),levels(cbed[,1]))){
+    rind<- which(rbed[,1]==chr)
+    cind<- which(cbed[,1]==chr)
+    if(length(rind)>0 && length(cind)>0){
+      rmts<- rep.col(as.integer(rbed[rind,2]),length(cind))
+      rmte<- rep.col(as.integer(rbed[rind,3]),length(cind))
+      cmts<- rep.row(as.integer(cbed[cind,2]),length(rind))
+      cmte<- rep.row(as.integer(cbed[cind,3]),length(rind))
+      if(lap){
+        s<- rmts<=cmte
+        e<- rmte>=cmts
+        se<- s==e
+      }else{
+        s<- rmts<=cmts
+        e<- rmte>=cmte
+        se<- s==e
+      }
+      rlap[rind]<- apply(se, 1, FUN = FUN)
+      clap[cind]<- apply(se, 2, FUN = FUN)
+      rl[[chr]]<- apply(se, 1, FUN = FUN)
+      cl[[chr]]<- apply(se, 2, FUN = FUN)
+    }
+  }
+  return(list(rlap,clap,rl,cl))
+}
+
+overlap.target<- function(rbed,cbed,col=4,lap=TRUE){
+  rlap<- rep(NA,nrow(rbed))
+  rlap.list<- rep(NA,nrow(rbed))
+  for(chr in intersect(levels(rbed[,1]),levels(cbed[,1]))){
+    rind<- which(rbed[,1]==chr)
+    cind<- which(cbed[,1]==chr)
+    cname<- cbed[cind,col]
+    if(length(rind)>0 && length(cind)>0){
+      rmts<- rep.col(as.integer(rbed[rind,2]),length(cind))
+      rmte<- rep.col(as.integer(rbed[rind,3]),length(cind))
+      cmts<- rep.row(as.integer(cbed[cind,2]),length(rind))
+      cmte<- rep.row(as.integer(cbed[cind,3]),length(rind))
+      if(lap){
+        s<- rmts<=cmte
+        e<- rmte>=cmts
+        se<- s==e
+      }else{
+        s<- rmts<=cmts
+        e<- rmte>=cmte
+        se<- s==e
+      }
+      
+      rlap[rind]<- apply(se, 1, function(x){as.character(cname[x>0][1])})
+      rlap.list[rind]<- apply(se, 1, function(x){as.character(cname[x>0])})
+
+    }
+  }
+  return(list(rlap,rlap.list))
+}
+```
+#Goal:This project is to study the non-promoter H3K4me3 in K562.
+#Data discription
+ChIP-Seq data(H3K4me3, H3K4me1, and H3K27ac) from ENCODE, run Macs 1.3.7(default) to get peaks
+RNA-Seq data(K562 and H1hesc)
+
+##First, let's check the H3K4me3 peak distribution in K562 and H1 cell lines
+```{r}
+k562.me3<- read.table("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/K562.H3k4me3.Rep2.macs.20151224_peaks.xls",header = TRUE)
+h1.me3<- read.table("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H1.H3k4me3.Rep2.macs.20151224_peaks.xls",header = TRUE)
+
+k562.me3<- Peaks.Distribution(k562.me3,refhg19)
+h1.me3<- Peaks.Distribution(h1.me3,refhg19)
+op <- par(mfrow = c(1, 2), pty = "s")
+pie(table(k562.me3$state),main="K562 H3K4me3")
+pie(table(h1.me3$state),main = "H1 H3K4me3")
+par(op)
+op <- par(mfrow = c(1, 2), pty = "s")
+boxplot(k562.me3$end-k562.me3$start~k562.me3$state,main="the distribution of peak length in K562")
+boxplot(h1.me3$end - h1.me3$start ~ h1.me3$state, main="the distribution of peak length in H1hesc")
+par(op)
+```
+In K562 cells, intergenic peaks(or non-promoter peaks) are higher than intergenic peaks in H1hesc. 
+**1.next, we can check other normal and cancer cell lines to inverestage whether this is common phenomenon between them.**
+**2.we can also look into other histone modification(such as H3K27ac, H3K4me1, and H3K27me3) change from normal cell lines to cancer cell lines.**
+the length of H3K4me3 peaks in promoter are longer than other peaks.
+
+#Questions
+1. why are intergenic peaks in K562 cells higher than intergenic peaks in H1hesc?
+  1.1 Do cancer cell lines have more H3K4me3 histone modification in non-promoter region than normal?
+  1.2 what about the distribution of other histone modification between cancer cell lines and normal cell lines?
+2. what is the relationship between H3K4me3 intergenic peaks and enhancer?
+  2.1 what is the relationship between H3K4me3 intergenic peaks and the expression of target gene?
+
+Fisrt, Let's try to study questions 1.1 and 1.2
+##we check the H3K4me3 peak distribution in different cell lines
+preprocess h3k4me3 data, get top 20k peaks by decreaseing p-vale and each state in different cell lines
+```{r}
+load("/opt/rstudio/rstudio1/rstudio1/proj/IronMan/data/h3k4me3.Rdata")
+h3k4me3.top<- lapply(h3k4me3,Toppeaks)
+len.k4me3<-melt(lapply(h3k4me3.top,function(x)return(x$end - x$start)))
+state.k4me3<- melt(lapply(h3k4me3.top,function(x)x$state))
+len.state.h3k4me3<- data.frame(Len=len.k4me3$value,State=state.k4me3$value,Name=len.k4me3$L1)
+
+```
+look into the H3K4me3 distribution in the whole genome to inverstigate the difference of H3K4me3 between normal and cancer cell lines 
+```{r}
+ggplot(len.state.h3k4me3)+geom_bar(aes(x=Name,fill=State))+
+  labs(x = "",y = "",title="The H3K4me3 distribution in whole genome",fill="") +
+  coord_flip()+
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        #axis.title.y = element_text(color="#993333", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+```
+cancer cell lines, except Hmec, have more H3K4me3 in intergenic region than normal cell lines. the result of Hmec may be caused by the quality of the data. **I will check the other replicate.**
+
+check the length distribution of H3K4me3 peaks in different cell lines
+```{r}
+ggplot(len.state.h3k4me3)+geom_boxplot(aes(x=State,y=Len,fill=Name))+
+  labs(x = "",y = "",title="The distribution of peak length in different region",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        #axis.title.y = element_text(color="#993333", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )+coord_cartesian(ylim = c(0, 10000))
+```
+the length of H3K4me3 peaks in promoter region are higher than the other.
+
+```{r}
+State.heatmap<- function(cell.lines,st="Promoter"){
+  temp<- merge.peaks(do.call(rbind.data.frame,lapply(cell.lines,function(x)x[x$state==st,])))
+  temp1<- data.frame(sapply(cell.lines,function(x)overlap(temp,x[x$state==st,])[[1]]))
+  temp1[temp1>0]<- 1
+  temp1<- temp1[do.call(order,temp1),]
+  heatmap(as.matrix(temp1),Rowv = NA,Colv = NA,scale = "none",main = paste("The distribution of H3K4me3",st,"peaks in different cell lines"),labRow = NA,col=c("white","red"))
+}
+op <- par(mfrow = c(2, 2), pty = "s")
+print(State.heatmap(h3k4me3.top,st="Promoter"),vp=define_region(1,1))
+print(State.heatmap(h3k4me3.top,st="Exon"),vp=define_region(1,2))
+print(State.heatmap(h3k4me3.top,st="Intron"),vp=define_region(2,1))
+print(State.heatmap(h3k4me3.top,st="Intergenic"),vp=define_region(2,2))
+par(op)
+```
+
+
+
+
+##then, we check the H3K27ac peak distribution in different cell lines
+```{r}
+h3k27ac.top<- lapply(h3k27ac,Toppeaks)
+len.k27ac<-melt(lapply(h3k27ac.top,function(x)return(x$end - x$start)))
+state.k27ac<- melt(lapply(h3k27ac.top,function(x)x$state))
+len.state.h3k27ac<- data.frame(Len=len.k27ac$value,State=state.k27ac$value,Name=len.k27ac$L1)
+ggplot(len.state.h3k27ac)+geom_bar(aes(x=Name,fill=State),position = "fill")+
+  labs(x = "",y = "",title="The H3K4me3 distribution in whole genome",fill="") +
+  coord_flip()+
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        #axis.title.y = element_text(color="#993333", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+ggplot(len.state.h3k27ac)+geom_boxplot(aes(x=State,y=Len,fill=Name))+
+  labs(x = "",y = "",title="The distribution of peak length in different region",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        #axis.title.y = element_text(color="#993333", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )+coord_cartesian(ylim = c(0, 10000))
+
+State.heatmap(h3k27ac.top,st="Promoter")
+State.heatmap(h3k27ac.top,st="Exon")
+State.heatmap(h3k27ac.top,st="Intron")
+State.heatmap(h3k27ac.top,st="Intergenic")
+
+```
+
+##next, we check the H3K4me1 peak distribution in different cell lines
+```{r}
+h3k4me1.top<- lapply(h3k4me1,Toppeaks)
+len.k4me1<-melt(lapply(h3k4me1.top,function(x)return(x$end - x$start)))
+state.k4me1<- melt(lapply(h3k4me1.top,function(x)x$state))
+len.state.h3k4me1<- data.frame(Len=len.k4me1$value,State=state.k4me1$value,Name=len.k4me1$L1)
+ggplot(len.state.h3k4me1)+geom_bar(aes(x=Name,fill=State),position = "fill")+
+  labs(x = "",y = "",title="The H3K4me1 distribution in whole genome",fill="") +
+  coord_flip()+
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        #axis.title.y = element_text(color="#993333", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+ggplot(len.state.h3k4me1)+geom_boxplot(aes(x=State,y=Len,fill=Name))+
+  labs(x = "",y = "",title="The distribution of peak length in different region",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        #axis.title.y = element_text(color="#993333", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )+coord_cartesian(ylim = c(0, 10000))
+
+State.heatmap(h3k4me1.top,st="Promoter")
+State.heatmap(h3k4me1.top,st="Exon")
+State.heatmap(h3k4me1.top,st="Intron")
+State.heatmap(h3k4me1.top,st="Intergenic")
+```
+
+
+##Second, the distribution characterictics of different Histone modification in each state(overview)
+the overlapping among H3K4me3, H3K27ac, and H3K4me1
+```{r}
+k562.ac.me3<- lapply(c("Promoter","Exon","Intron","Intergenic"),function(x)overlap(h3k27ac.top$K562.H3k27ac.Rep1[h3k27ac.top$K562.H3k27ac.Rep1$state==x,],h3k4me3.top$K562.H3k4me3.Rep2[h3k4me3.top$K562.H3k4me3.Rep2$state==x,]))
+names(k562.ac.me3)<- c("Promoter","Exon","Intron","Intergenic")
+sapply(k562.ac.me3,function(x)sum(x[[2]]))
+sapply(k562.ac.me3,function(x)length(x[[1]]))
+sapply(k562.ac.me3,function(x)length(x[[2]]))
+```
+
+```{r}
+k562.ac.me1<- lapply(c("Promoter","Exon","Intron","Intergenic"),function(x)overlap(h3k27ac.top$K562.H3k27ac.Rep1[h3k27ac.top$K562.H3k27ac.Rep1$state==x,],h3k4me1.top$K562.H3k4me1.Rep1[h3k4me1.top$K562.H3k4me1.Rep1$state==x,]))
+names(k562.ac.me1)<- c("Promoter","Exon","Intron","Intergenic")
+sapply(k562.ac.me1,function(x)sum(x[[2]]))
+sapply(k562.ac.me1,function(x)length(x[[1]]))
+sapply(k562.ac.me1,function(x)length(x[[2]]))
+```
+
+```{r}
+k562.me3.me1<- lapply(c("Promoter","Exon","Intron","Intergenic"),function(x)overlap(h3k4me3.top$K562.H3k4me3.Rep2[h3k4me3.top$K562.H3k4me3.Rep2$state==x,],h3k4me1.top$K562.H3k4me1.Rep1[h3k4me1.top$K562.H3k4me1.Rep1$state==x,]))
+names(k562.ac.me1)<- c("Promoter","Exon","Intron","Intergenic")
+sapply(k562.me3.me1,function(x)sum(x[[2]]))
+sapply(k562.me3.me1,function(x)length(x[[1]]))
+sapply(k562.me3.me1,function(x)length(x[[2]]))
+```
+
+```{r}
+h1.ac.me3<- lapply(c("Promoter","Exon","Intron","Intergenic"),function(x)overlap(h3k27ac.top$H1.H3k27ac.rep2[h3k27ac.top$H1.H3k27ac.rep2$state==x,],h3k4me3.top$H1.H3k4me3.Rep2[h3k4me3.top$H1.H3k4me3.Rep2$state==x,]))
+names(h1.ac.me3)<- c("Promoter","Exon","Intron","Intergenic")
+sapply(h1.ac.me3,function(x)sum(x[[2]]))
+sapply(h1.ac.me3,function(x)length(x[[1]]))
+sapply(h1.ac.me3,function(x)length(x[[2]]))
+```
+
+```{r}
+h1.ac.me1<- lapply(c("Promoter","Exon","Intron","Intergenic"),function(x)overlap(h3k27ac.top$H1.H3k27ac.rep2[h3k27ac.top$H1.H3k27ac.rep2$state==x,],h3k4me1.top$H1.H3k4me1.Rep1[h3k4me1.top$H1.H3k4me1.Rep1$state==x,]))
+names(h1.ac.me1)<- c("Promoter","Exon","Intron","Intergenic")
+sapply(h1.ac.me1,function(x)sum(x[[2]]))
+sapply(h1.ac.me1,function(x)length(x[[1]]))
+sapply(h1.ac.me1,function(x)length(x[[2]]))
+```
+
+```{r}
+h1.me3.me1<- lapply(c("Promoter","Exon","Intron","Intergenic"),function(x)overlap(h3k4me3.top$H1.H3k4me3.Rep2[h3k4me3.top$H1.H3k4me3.Rep2$state==x,],h3k4me1.top$H1.H3k4me1.Rep1[h3k4me1.top$H1.H3k4me1.Rep1$state==x,]))
+names(h1.me3.me1)<- c("Promoter","Exon","Intron","Intergenic")
+sapply(h1.me3.me1,function(x)sum(x[[2]]))
+sapply(h1.me3.me1,function(x)length(x[[1]]))
+sapply(h1.me3.me1,function(x)length(x[[2]]))
+```
+
+##the distribution of differen histone modification in K562
+```{r}
+Histone.state<- function(cell.lines){
+  temp<- merge.peaks(do.call(rbind.data.frame,cell.lines))
+  temp1<- data.frame(sapply(cell.lines,function(x)overlap.target(temp,x,col = 10)[[1]]))
+  return(temp1)
+}
+temp<- Histone.state(list(H3K4me3=h3k4me3.top$K562.H3k4me3.Rep2,H3K4me1=h3k4me1.top$K562.H3k4me1.Rep1,H3K27ac=h3k27ac.top$K562.H3k27ac.Rep1))
+
+```
+
