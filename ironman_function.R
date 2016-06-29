@@ -10,6 +10,12 @@ Peaks.Distribution<- function(peaks,refhg19=refhg19){
   return(peaks)
 }
 
+Peaks.Promoter<- function(peaks,promoter){
+  peaks$state<- "Intergenic"
+  tp.promoter<- overlap(peaks,promoter)
+  peaks$state[tp.promoter[[1]]>0]<- "Promoter"
+  return(peaks)
+}
 
 Toppeaks<- function(x,top=20000){
   pk<- x[order(-x[,7]),]
@@ -21,7 +27,7 @@ Toppeaks<- function(x,top=20000){
 overlap.target.exp<- function(rbed,cbed,col=4,exp,lap=TRUE){
   rlap<- rep(NA,nrow(rbed))
   rlap.list<- rep(NA,nrow(rbed))
-  temp<- rep(NA,nrow(rbed))
+  #temp<- rep(NA,nrow(rbed))
   for(chr in intersect(levels(rbed[,1]),levels(cbed[,1]))){
     rind<- which(rbed[,1]==chr)
     cind<- which(cbed[,1]==chr)
@@ -43,11 +49,12 @@ overlap.target.exp<- function(rbed,cbed,col=4,exp,lap=TRUE){
       }
       
       rlap[rind]<- apply(se, 1, function(x){as.character(cname[x>0][which.max(cexp[x>0])])})
-      rlap.list[rind]<- apply(se, 1, function(x){as.character(cname[x>0])})
-      temp[rind]<- apply(se, 1, function(x){cexp[x>0]})
+      #rlap.list[rind]<- apply(se, 1, function(x){as.character(cname[x>0])})
+      #temp[rind]<- apply(se, 1, function(x){cexp[x>0]})
     }
   }
-  return(list(rlap,rlap.list,temp))
+  #return(list(rlap,rlap.list,temp))
+  return(rlap)
 }
 
 overlap.target.dist<- function(rbed,cbed,col=4,lap=TRUE){
@@ -55,7 +62,7 @@ overlap.target.dist<- function(rbed,cbed,col=4,lap=TRUE){
   rlap.list<- rep(NA,nrow(rbed))
   summit<- rowMeans(rbed[,2:3])
   tss<- rowMeans(cbed[,2:3])
-  temp<- rep(NA,nrow(rbed))
+  #temp<- rep(NA,nrow(rbed))
   for(chr in intersect(levels(rbed[,1]),levels(cbed[,1]))){
     rind<- which(rbed[,1]==chr)
     cind<- which(cbed[,1]==chr)
@@ -77,10 +84,11 @@ overlap.target.dist<- function(rbed,cbed,col=4,lap=TRUE){
       }
       
       rlap[rind]<- lapply(1:nrow(se),function(i){as.character(cname[se[i,]>0])[which.min(abs(ctss[se[i,]>0]-summit[rind[i]]))]})
-      rlap.list[rind]<- apply(se, 1, function(x){as.character(cname[x>0])})
-      temp[rind]<- lapply(1:nrow(se),function(i){abs(ctss[se[i,]>0]-summit[rind[i]])})
+      #rlap.list[rind]<- apply(se, 1, function(x){as.character(cname[x>0])})
+      #temp[rind]<- lapply(1:nrow(se),function(i){abs(ctss[se[i,]>0]-summit[rind[i]])})
     }
   }
-  return(list(rlap,rlap.list,temp))
+  #return(list(rlap,rlap.list,temp))
+  return(rlap)
 }
 #genes targeted by peaks
