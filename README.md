@@ -43,11 +43,3 @@ super-enhancers were found at key oncogenes in many cancer types.(15)
   
 
 
-Error : package ‘IRanges’ 2.2.9 was found, but >= 2.3.7 is required by ‘Rsamtools’
-ERROR: lazy loading failed for package ‘Rsamtools’
-* removing ‘/opt/rstudio/rstudio1/R/x86_64-pc-linux-gnu-library/3.2/Rsamtools’
-* restoring previous ‘/opt/rstudio/rstudio1/R/x86_64-pc-linux-gnu-library/3.2/Rsamtools’
-ERROR: dependency ‘rtracklayer’ is not available for package ‘ChIPseeker’
-* removing ‘/opt/rstudio/rstudio1/R/x86_64-pc-linux-gnu-library/3.2/ChIPseeker’
-ERROR: dependency ‘SummarizedExperiment’ is not available for package ‘GenomicAlignments’
-* removing ‘/opt/rstudio/rstudio1/R/x86_64-pc-linux-gnu-library/3.2/GenomicAlignments’
