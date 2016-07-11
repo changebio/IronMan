@@ -1,17 +1,21 @@
 ### =========================================================================
+### peak character(active or non-active) 
 ### calculate the density of a bed file in different groups of peaks 
 ### -------------------------------------------------------------------------
-
+k4me3.smt<- lapply(grl.k4me3.ma,function(x)GRanges(seqnames = seqnames(x),ranges = IRanges(start = start(x)+x$summit-1000,width = 2000)))
+k4me3.smt<- lapply(k4me3.smt,function(x)dropSeqlevels(x,c("chrY","chrM")))
+k4me3.smt<- GRangesList(k4me3.smt)
+k4me3_gr<- stack(k4me3.smt)
 #read DNase narrow peaks------
+require(genomation)
 dnase.K562 <- readNarrowPeak("/mnt/local-disk1/rsgeno2/MAmotif/RACK7/routput/wgEncodeAwgDnaseUwdukeK562UniPk.narrowPeak/wgEncodeAwgDnaseUwdukeK562UniPk.narrowPeak")
 
-gro1<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/K562_biol_rep123.hg19.ctss_minus_pool.bed")
-k4me3_NB<- lapply(grl.k4me3.ma,function(x)GRanges(seqnames = seqnames(x),ranges = IRanges(start = start(x)+x$summit-1000,width = 2000)))
+#gro1<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/K562_biol_rep123.hg19.ctss_minus_pool.bed")
 
 #get score matrix in peak regions, which must be the same length
-k4me3_NB.dnase<- lapply(k4me3_NB,function(x)ScoreMatrix(dnase.K562,x))
-k4me3_NB.dnase1<- sapply(k4me3_NB.dnase,colMeans)
-ggplot(melt(k4me3_NB.dnase1[,c(1,3,5)]))+geom_line(aes(x=Var1,y=value,colour=Var2))+
+k4me3.smt.dnase<- lapply(k4me3.smt,function(x)ScoreMatrix(dnase.K562,x))
+k4me3.smt.dnase1<- sapply(k4me3.smt.dnase,colMeans)
+ggplot(melt(k4me3.smt.dnase1[,c(1,3,5)]))+geom_line(aes(x=Var1,y=value,colour=Var2))+
   labs(x = "",y = " ",title="The average DNase signal in different enhancer",fill="") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
         axis.title.x = element_text( face="bold",size=14),
@@ -22,9 +26,25 @@ ggplot(melt(k4me3_NB.dnase1[,c(1,3,5)]))+geom_line(aes(x=Var1,y=value,colour=Var
         axis.text.y = element_text(face="bold", size=14)
   )
 
-k4me3_NB.gro<- lapply(k4me3_NB,function(x)ScoreMatrixBin(gro1,x,bin.num = 50))
-k4me3_NB.gro1<- sapply(k4me3_NB.gro,colMeans)
-ggplot(melt(k4me3_NB.gro1[,c(1,3,5)]))+geom_line(aes(x=Var1,y=value,colour=Var2))+
+gro.seq<- lapply(list.files("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",pattern = ".bed"),function(x)readPeakFile(paste0("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",x)))
+names(gro.seq)<-list.files("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",pattern = ".bed")
+gro.seq<- lapply(gro.seq,function(x)dropSeqlevels(x,c("chrY","chrM")))
+
+# k4me3.gro<- lapply(gro.seq,function(gro){
+#   lapply(k4me3.smt,function(x)ScoreMatrix(gro,x))
+# })
+k4me3.gro<-lapply(k4me3.smt,function(x)ScoreMatrixList(gro.seq,x,weight.col = "V5"))
+k4me3.gro<- lapply(k4me3.gro,intersectScoreMatrixList)
+k4me3.gro1<- lapply(k4me3.gro,function(gro){
+  lapply(gro,rowSums)
+})
+
+a<-lapply(k4me3.gro1,function(x){(x[[2]]-x[[1]])/(x[[2]]+x[[1]])})
+hist(a$P.B,xlab = "D score",main = "Histogram of D score in K562-unique promoter H3K4me3")
+k4me3.smt.gro<- lapply(k4me3.smt,function(x)ScoreMatrixBin(gro.seq[[1]],x,bin.num = 50,weight.col = "V5"))
+k4me3.smt.gro1<- sapply(k4me3.smt.gro,colMeans)
+tp<- k4me3.smt.gro1
+ggplot(melt((tp+k4me3.smt.gro1)/2))+geom_line(aes(x=Var1,y=value,colour=Var2))+
   labs(x = "",y = " ",title="The average GRO-Seq signal in different enhancer",fill="") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
         axis.title.x = element_text( face="bold",size=14),
@@ -35,7 +55,37 @@ ggplot(melt(k4me3_NB.gro1[,c(1,3,5)]))+geom_line(aes(x=Var1,y=value,colour=Var2)
         axis.text.y = element_text(face="bold", size=14)
   )
 
-k4me3_NB.dnase.bin<- ScoreMatrixBin(dnase.K562,k4me3_NB,bin.num = 50)
+k4me3.smt.dnase.bin<- ScoreMatrixBin(dnase.K562,k4me3.smt,bin.num = 50)
+
+#negtive control
+require(rtracklayer)
+k27me3.K562<- import.bed("/mnt/local-disk1/rsgeno2/huangyin/PRC2/K562_H3K27me3/GSM733658_hg19_wgEncodeBroadHistoneK562H3k27me3StdAlnRep1.bed")
+k4me3.smt.k27me3<- lapply(k4me3.smt,function(x)ScoreMatrix(k27me3.K562,x))
+k4me3.smt.k27me31<- sapply(k4me3.smt.k27me3,colMeans)
+ggplot(melt(k4me3.smt.k27me31[,c(1,3,5)]))+geom_line(aes(x=Var1,y=value,colour=Var2))+
+  labs(x = "",y = " ",title="The average H3K27me3 signal in different enhancer",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+
+suz12.K562<- import.bed("/mnt/local-disk1/rsgeno2/huangyin/PRC2/ChIP_raw_data/K562_FB_EED_GCCAAT_L007_R1.bed")
+k4me3.smt.suz12<- lapply(k4me3.smt,function(x)ScoreMatrix(a1,x))
+k4me3.smt.suz121<- sapply(k4me3.smt.suz12,colMeans)
+ggplot(melt(k4me3.smt.suz121))+geom_line(aes(x=Var1,y=value,colour=Var2))+
+  labs(x = "",y = " ",title="The average SUZ12 signal in different enhancer",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
 
 
 # ---------------------------------------------------------------------------- #
@@ -44,7 +94,9 @@ k4me3_NB.dnase.bin<- ScoreMatrixBin(dnase.K562,k4me3_NB,bin.num = 50)
 #' Returns a intersection of rows for each matrix in a ScoreMatrixList object. 
 #' This is done using the rownames of each element in the list.
 #' 
-k4me3_NB.dnase.lst<- ScoreMatrixList(dnase.K562,k4me3_NB)
+k4me3.smt.dnase.lst<- ScoreMatrixList(dnase.K562,k4me3.smt)
+
+
 
 
 # ---------------------------------------------------------------------------- #
@@ -72,6 +124,7 @@ bed.files<-list(DNase.rep1="/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke
                 H3K4me1.rep2="/mnt/local-disk1/rsgeno2/MAmotif/3.Histone_Broad_hg19/H3K4me1/wgEncodeBroadHistoneK562H3k4me1StdAlnRep2.bed")
 
 DNase.bed<- lapply(bed.files,import.bed)
+
 
 #bam.files<- c("/mnt/local-disk1/rsgeno2/MAmotif/RACK7/wgEncodeOpenChromChipK562Pol2AlnRep1.bam","/mnt/local-disk1/rsgeno2/MAmotif/RACK7/wgEncodeOpenChromChipK562Pol2AlnRep2.bam")
 ma.h3k4me1.enh.sml.lst<- lapply(ma.h3k4me1.enh.lst,ScoreMatrixList,targets=DNase.bed, bin.num=100, cores=2)

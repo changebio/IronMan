@@ -23,7 +23,8 @@ k562.h1.manorm$K562<- k562.h1.manorm$M_value>=-1
 k562.h1.manorm$H1hesc<- k562.h1.manorm$M_value<=1
 k562.h1.manorm$H3K4me1[countOverlaps(k562.h1.manorm,k562.h1.k4me1.manorm)>0]<- TRUE
 k562.h1.manorm$H3K27ac[countOverlaps(k562.h1.manorm,k562.h1.k27ac.manorm)>0]<- TRUE
-k562.h1.manorm$Prom[countOverlaps(k562.h1.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0]<- TRUE
+k562.h1.manorm$Promoter[countOverlaps(k562.h1.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0]<- TRUE
+k562.h1.manorm$monPromoter[countOverlaps(k562.h1.manorm,CTSS.prom)==0]<- TRUE
 
 k562.h1.manorm.anno <- annotatePeak(k562.h1.manorm, tssRegion=c(-2000, 2000), TxDb =txdb, annoDb="org.Hs.eg.db")
 k562.h1.manorm<- k562.h1.manorm.anno@anno

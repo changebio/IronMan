@@ -8,12 +8,31 @@ txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
 require(GenomicRanges)
 #preprocess H3K4me3 after running MAnorm by K562 and H1======
 k562.h1.k4me3.manorm<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.H1.rep1.top2k.20160520/K562.H1.rep1.top2k.20160520_all_peak_MAvalues.xls",header = TRUE)
+k562.h1.k4me3.manorm<- dropSeqlevels(k562.h1.k4me3.manorm,"chrY")
+k562.h1.manorm$K562<- k562.h1.manorm$M_value>=-1
+k562.h1.manorm$H1hesc<- k562.h1.manorm$M_value<=1
+k562.h1.manorm$Promoter<-countOverlaps(k562.h1.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0
+k562.h1.manorm$nonPromoter<-countOverlaps(k562.h1.manorm,CTSS.prom)==0
+
+require(VennDiagram)
+grid.newpage()
+T<-venn.diagram(list(Promoter=which(k562.h1.manorm$Promoter),Non_Promoter=which(k562.h1.manorm$nonPromoter),K562=which(k562.h1.manorm$K562),
+                     H1hesc=which(k562.h1.manorm$H1hesc)),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
+grid.draw(T)
+
 k562.h1.k4me3.manorm$Prom<-"N"
+k562.h1.k4me3.manorm$Prom[countOverlaps(k562.h1.k4me3.manorm,CTSS.prom)>0]<-"V"
 k562.h1.k4me3.manorm$Prom[countOverlaps(k562.h1.k4me3.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0]<-"P"
+
+k562.h1.k4me3.manorm<- k562.h1.k4me3.manorm[k562.h1.k4me3.manorm$Prom!="V"]
 k562.h1.k4me3.manorm$Peaktype<- setMtofactors(k562.h1.k4me3.manorm$M_value)
 k562.h1.k4me3.manorm$State<- with(k562.h1.k4me3.manorm,interaction(Prom,Peaktype))
 grl.k4me3.ma<- split(k562.h1.k4me3.manorm,as.factor(k562.h1.k4me3.manorm$State))
 
+#H3K4me3 peak annotations
+require(ChIPseeker)
+k562.h1.k4me3.manorm.anno <- annotatePeak(k562.h1.k4me3.manorm, tssRegion=c(-2000, 2000), TxDb =txdb, annoDb="org.Hs.eg.db")
+k562.h1.k4me3.manorm<- k562.h1.k4me3.manorm.anno@anno
 
 #------------
 boxplot(M_value~State,data=mcols(k562.h1.k4me3.manorm))
@@ -23,8 +42,8 @@ abline(h=-1)
 #read H3K4me1 macs peaks======
 k4me1.mc<- list(K562=readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K4me1.top20k/K562.H3k4me1.Rep2.macs.20160512_Top20K_peaks.xls"),
              H1hesc=readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K4me1.top20k/H1.H3k4me1.Rep2.macs.20160512_Top20K_peaks.xls"))
-#k4me1.mc<- list(K562=readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K27ac.top20k/K562.H3k27ac.Rep2.macs.20160512_Top20K_peaks.xls"),
-#                H1hesc=readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K27ac.top20k/H1.H3k27ac.rep2.macs.20151224_Top20K_peaks.xls"))
+# k4me1.mc<- list(K562=readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K27ac.top20k/K562.H3k27ac.Rep2.macs.20160512_Top20K_peaks.xls"),
+#                 H1hesc=readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K27ac.top20k/H1.H3k27ac.rep2.macs.20151224_Top20K_peaks.xls"))
 
 #k4me1.mc<- lapply(list.files("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K27ac.top20k/",pattern = ".xls"),function(x)readPeakFile(paste0("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K27ac.top20k/",x)))
 
@@ -34,8 +53,10 @@ k4me1.d$K562p <- k4me1.d$K562/k4me1.d$len
 k4me1.d$H1p<- k4me1.d$H1hesc/k4me1.d$len
 k4me1.d$type<- row.names(k4me1.d)
 #barplot----
+require(ggplot2)
+require(reshape2)
 ggplot(melt(k4me1.d[,4:6]),aes(x=type,y=value,fill=variable))  + geom_bar(stat = "identity",position ="dodge" ) +
-  labs(x = "",y = "",title="The persentage of H3K27ac in different kinds of H3K4me3",fill="") +
+  labs(x = "",y = "",title="The persentage of H3K4me1 in different kinds of H3K4me3",fill="") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
         axis.title.x = element_text( face="bold",size=14),
         #axis.title.y = element_text(color="#993333", size=14, face="bold"),

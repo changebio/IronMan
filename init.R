@@ -25,16 +25,20 @@ T<-venn.diagram(list(RefGene=refGene,KnowGene=knowGene,GENCODE=gencode,Ensembl=e
 grid.draw(T)
 
 #combine the TSS from different refgene 
-CTSS<- rbind(hg19_refGene$hg19_Ensembl_Genes[,3:6],hg19_refGene$hg19_GENCODE_V14[,3:6],hg19_refGene$knownGene[,3:6],hg19_refGene$refGene[,3:6])
+CTSS<- rbind(hg19_refGene$knownGene[,3:6],hg19_refGene$hg19_Ensembl_Genes[,3:6],hg19_refGene$hg19_GENCODE_V14[,3:6],hg19_refGene$refGene[,3:6])
 CTSS<- CTSS[!duplicated(CTSS),]
 CTSS<- CTSS[nchar(as.character(CTSS$V3))<6,]
-
-pstart<- CTSS$V5-2000
-pstart[CTSS$V4=="-"]<- CTSS$V6[CTSS$V4=="-"]-2000
-pend<- CTSS$V5+2000
-pend[CTSS$V4=="-"]<- CTSS$V6[CTSS$V4=="-"]+2000
-CTSS.promoter<- data.frame(chr=CTSS$V3,start=pstart,end=pend)
-CTSS.promoter.merge<- merge.peaks(CTSS.promoter)
+CTSS<- CTSS[,c(1,3,4,2)]
+colnames(CTSS)<- c("chr","start","end","strand")
+CTSS<- makeGRangesFromDataFrame(CTSS)
+start(CTSS)<- start(CTSS) + 1
+CTSS.prom<- promoters(CTSS,upstream = 2000,downstream = 2000)
+# pstart<- CTSS$V5-2000
+# pstart[CTSS$V4=="-"]<- CTSS$V6[CTSS$V4=="-"]-2000
+# pend<- CTSS$V5+2000
+# pend[CTSS$V4=="-"]<- CTSS$V6[CTSS$V4=="-"]+2000
+# CTSS.promoter<- data.frame(chr=CTSS$V3,start=pstart,end=pend)
+# CTSS.promoter.merge<- merge.peaks(CTSS.promoter)
 # load hg19 cpg island  ---------------------------------------------------
 
 cpghg19<- read.table("/mnt/local-disk1/rsgeno2/huangyin/PRC2/hg19.cpgIslandExt.txt",header=TRUE,row.names = NULL,sep = "\t")
