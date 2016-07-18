@@ -9,15 +9,15 @@ require(GenomicRanges)
 #preprocess H3K4me3 after running MAnorm by K562 and H1======
 k562.h1.k4me3.manorm<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.H1.rep1.top2k.20160520/K562.H1.rep1.top2k.20160520_all_peak_MAvalues.xls",header = TRUE)
 k562.h1.k4me3.manorm<- dropSeqlevels(k562.h1.k4me3.manorm,"chrY")
-k562.h1.manorm$K562<- k562.h1.manorm$M_value>=-1
-k562.h1.manorm$H1hesc<- k562.h1.manorm$M_value<=1
-k562.h1.manorm$Promoter<-countOverlaps(k562.h1.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0
-k562.h1.manorm$nonPromoter<-countOverlaps(k562.h1.manorm,CTSS.prom)==0
+k562.h1.k4me3.manorm$K562<- k562.h1.k4me3.manorm$M_value>=-1
+k562.h1.k4me3.manorm$H1hesc<- k562.h1.k4me3.manorm$M_value<=1
+k562.h1.k4me3.manorm$Promoter<-countOverlaps(k562.h1.k4me3.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0
+k562.h1.k4me3.manorm$nonPromoter<-countOverlaps(k562.h1.k4me3.manorm,CTSS.prom)==0
 
 require(VennDiagram)
 grid.newpage()
-T<-venn.diagram(list(Promoter=which(k562.h1.manorm$Promoter),Non_Promoter=which(k562.h1.manorm$nonPromoter),K562=which(k562.h1.manorm$K562),
-                     H1hesc=which(k562.h1.manorm$H1hesc)),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
+T<-venn.diagram(list(Promoter=which(k562.h1.k4me3.manorm$Promoter),Non_Promoter=which(k562.h1.k4me3.manorm$nonPromoter),K562=which(k562.h1.k4me3.manorm$K562),
+                     H1hesc=which(k562.h1.k4me3.manorm$H1hesc)),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
 grid.draw(T)
 
 k562.h1.k4me3.manorm$Prom<-"N"
@@ -25,6 +25,11 @@ k562.h1.k4me3.manorm$Prom[countOverlaps(k562.h1.k4me3.manorm,CTSS.prom)>0]<-"V"
 k562.h1.k4me3.manorm$Prom[countOverlaps(k562.h1.k4me3.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0]<-"P"
 
 k562.h1.k4me3.manorm<- k562.h1.k4me3.manorm[k562.h1.k4me3.manorm$Prom!="V"]
+grid.newpage()
+T<-venn.diagram(list(Promoter=which(k562.h1.k4me3.manorm$Promoter),Non_Promoter=which(k562.h1.k4me3.manorm$nonPromoter),K562=which(k562.h1.k4me3.manorm$K562),
+                     H1hesc=which(k562.h1.k4me3.manorm$H1hesc)),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
+grid.draw(T)
+
 k562.h1.k4me3.manorm$Peaktype<- setMtofactors(k562.h1.k4me3.manorm$M_value)
 k562.h1.k4me3.manorm$State<- with(k562.h1.k4me3.manorm,interaction(Prom,Peaktype))
 grl.k4me3.ma<- split(k562.h1.k4me3.manorm,as.factor(k562.h1.k4me3.manorm$State))

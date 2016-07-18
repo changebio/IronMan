@@ -5,10 +5,11 @@
 tropical=  c('darkorange', 'dodgerblue', 'hotpink', 'limegreen', 'yellow')
 palette(tropical)
 par(pch=19)
-# load refgene hg19 -------------------------------------------------------
-
-load("/opt/rstudio/rstudio1/rstudio1/proj/refdata/refhg19.RData")
-gtf<- read.table("/mnt/local-disk1/rsgeno2/huangyin/PRC2/Refgenes/genes.gtf",sep = "\t")
+plot(c(1,2,3),c(1,2,3),col=11)
+# # load refgene hg19 -------------------------------------------------------
+# 
+# load("/opt/rstudio/rstudio1/rstudio1/proj/refdata/refhg19.RData")
+# gtf<- read.table("/mnt/local-disk1/rsgeno2/huangyin/PRC2/Refgenes/genes.gtf",sep = "\t")
 
 #merge multiple version promoter
 ref.name<- c("bin","name","chrom","strand","txStart","txEnd","cdsStart","cdsEnd","exonCount","exonStarts","exonEnds","score","name2","cdsStartStat","cdsEndStat","exonFrames")
@@ -16,13 +17,13 @@ ref.files<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/UCSC_brower_2016-2-17",
 hg19_refGene<- lapply(paste0("/mnt/local-disk1/rsgeno2/MAmotif/UCSC_brower_2016-2-17/",ref.files), function(x)read.table(x,sep="\t"))
 names(hg19_refGene)<- substr(ref.files,1,nchar(ref.files)-4)
 hg19_refGene$knownGene[,2:13]<- hg19_refGene$knownGene
-refGene<- paste0(hg19_refGene$refGene$V3,hg19_refGene$refGene$V4,hg19_refGene$refGene$V5)
-knowGene<- paste0(hg19_refGene$knownGene$V2,hg19_refGene$knownGene$V3,hg19_refGene$knownGene$V4)
-gencode<- paste0(hg19_refGene$hg19_GENCODE_V14$V3,hg19_refGene$hg19_GENCODE_V14$V4,hg19_refGene$hg19_GENCODE_V14$V5)
-ensembl<- paste0(hg19_refGene$hg19_Ensembl_Genes$V3,hg19_refGene$hg19_Ensembl_Genes$V4,hg19_refGene$hg19_Ensembl_Genes$V5)
-grid.newpage()
-T<-venn.diagram(list(RefGene=refGene,KnowGene=knowGene,GENCODE=gencode,Ensembl=ensembl),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
-grid.draw(T)
+# refGene<- paste0(hg19_refGene$refGene$V3,hg19_refGene$refGene$V4,hg19_refGene$refGene$V5)
+# knowGene<- paste0(hg19_refGene$knownGene$V2,hg19_refGene$knownGene$V3,hg19_refGene$knownGene$V4)
+# gencode<- paste0(hg19_refGene$hg19_GENCODE_V14$V3,hg19_refGene$hg19_GENCODE_V14$V4,hg19_refGene$hg19_GENCODE_V14$V5)
+# ensembl<- paste0(hg19_refGene$hg19_Ensembl_Genes$V3,hg19_refGene$hg19_Ensembl_Genes$V4,hg19_refGene$hg19_Ensembl_Genes$V5)
+# grid.newpage()
+# T<-venn.diagram(list(RefGene=refGene,KnowGene=knowGene,GENCODE=gencode,Ensembl=ensembl),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
+# grid.draw(T)
 
 #combine the TSS from different refgene 
 CTSS<- rbind(hg19_refGene$knownGene[,3:6],hg19_refGene$hg19_Ensembl_Genes[,3:6],hg19_refGene$hg19_GENCODE_V14[,3:6],hg19_refGene$refGene[,3:6])
@@ -33,6 +34,7 @@ colnames(CTSS)<- c("chr","start","end","strand")
 CTSS<- makeGRangesFromDataFrame(CTSS)
 start(CTSS)<- start(CTSS) + 1
 CTSS.prom<- promoters(CTSS,upstream = 2000,downstream = 2000)
+saveRDS(CTSS.prom,file = "data/CTSS_promoters.rds")
 # pstart<- CTSS$V5-2000
 # pstart[CTSS$V4=="-"]<- CTSS$V6[CTSS$V4=="-"]-2000
 # pend<- CTSS$V5+2000
