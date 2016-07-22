@@ -101,6 +101,7 @@ Dscorebyregion<- function(qurey,subject,cutoff=NULL){
   }
  
   Dscore<- as.data.frame(t(apply(a,2,function(x)table(x>0,as.data.frame(qurey)$strand))))
+  Dscore$V5<- rowSums(Dscore[,1:4])
   Dscore$V6<- length(qurey)
   Dscore$number<- apply(a,2,function(x)(length(qurey)-sum(is.na(x)))/length(qurey))
   Dscore$plus<- Dscore$V2/(Dscore$V1+Dscore$V2)
@@ -110,6 +111,7 @@ Dscorebyregion<- function(qurey,subject,cutoff=NULL){
   return(Dscore)
 }
 
+##tag cutoff = 6
 wtap<- Dscorebyregion(ucsc.gene.pt,gro.seq[1:2],cutoff = 6)
 ntap<- Dscorebyregion(ucsc.gene.pt,gro.seq[3:4],cutoff = 6)
 cage<- Dscorebyregion(ucsc.gene.pt,gro.seq[5:6],cutoff = 6)
@@ -121,7 +123,29 @@ ggplot(melt(Dscore[7:12]),aes(x=2^as.numeric(region),y=value,colour=type,shape =
   geom_line(size=1)+geom_point(size=2)+
   geom_vline(xintercept = 250,colour="blue")+
   geom_vline(xintercept = 120)+
-  labs(x = "",y = " ",title="ratio",fill="") +
+  labs(x = "",y = " ",title="the corrected ratio with tag cutoff equal to 6",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+##no tag cutoff
+wtap<- Dscorebyregion(ucsc.gene.pt,gro.seq[1:2])
+ntap<- Dscorebyregion(ucsc.gene.pt,gro.seq[3:4])
+cage<- Dscorebyregion(ucsc.gene.pt,gro.seq[5:6])
+
+
+Dscore<- Reduce(rbind,list(wtap,ntap,cage))
+Dscore$type<- factor(rep(c("wTAP","nTAP","CAGE"),each=12))
+
+ggplot(melt(Dscore[7:12]),aes(x=2^as.numeric(region),y=value,colour=type,shape = variable,linetype = type,group=interaction(variable,type)))+
+  geom_line(size=1)+geom_point(size=2)+
+  geom_vline(xintercept = 250,colour="blue")+
+  geom_vline(xintercept = 120)+
+  labs(x = "",y = " ",title="the corrected ratio without tag cutoff",fill="") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
         axis.title.x = element_text( face="bold",size=14),
         axis.title.y = element_text(color="black", size=14, face="bold"),
@@ -131,3 +155,93 @@ ggplot(melt(Dscore[7:12]),aes(x=2^as.numeric(region),y=value,colour=type,shape =
         axis.text.y = element_text(face="bold", size=14)
   )
   
+#cutoff step in 120, 240,and 500, respectively-------
+Dscorebycutoff<- function(qurey,subject,width=500){
+  qurey<- resize(qurey,width = width,fix = "center")
+  sml<- ScoreMatrixList(subject,qurey,weight.col = "V5")
+  qurey <- qurey[as.numeric(Reduce(intersect,lapply(sml,rownames)))]
+  sml<- intersectScoreMatrixList(sml)
+  
+  a<-sapply(0:30,function(n){
+    score<- lapply(sml,rowSums)
+    temp<- rep(NA,length(score[[1]]))
+    ind<- (score[[2]]+score[[1]])>=n
+    score <- lapply(score, function(x)x[ind])
+    temp[ind]<- (score[[2]]-score[[1]])/(score[[2]]+score[[1]])
+    temp
+  })
+  
+  
+  Dscore<- as.data.frame(t(apply(a,2,function(x)table(x>0,as.data.frame(qurey)$strand))))
+  Dscore$V5<- rowSums(Dscore[,1:4])
+  Dscore$V6<- length(qurey)
+  Dscore$number<- apply(a,2,function(x)(length(qurey)-sum(is.na(x)))/length(qurey))
+  Dscore$plus<- Dscore$V2/(Dscore$V1+Dscore$V2)
+  Dscore$minus<- Dscore$V3/(Dscore$V3+Dscore$V4)
+  Dscore$rate <- (Dscore$V2+Dscore$V3)/rowSums(Dscore[,1:4])
+  Dscore$region<- as.factor(0:30)
+  return(Dscore)
+}
+
+##500-----------
+wtap<- Dscorebycutoff(ucsc.gene.pt,gro.seq[1:2])
+ntap<- Dscorebycutoff(ucsc.gene.pt,gro.seq[3:4])
+cage<- Dscorebycutoff(ucsc.gene.pt,gro.seq[5:6])
+
+Dscore<- Reduce(rbind,list(wtap,ntap,cage))
+Dscore$type<- factor(rep(c("wTAP","nTAP","CAGE"),each=31))
+
+ggplot(melt(Dscore[7:12]),aes(x=as.numeric(region),y=value,colour=type,shape = variable,linetype = type,group=interaction(variable,type)))+
+  geom_line(size=1)+geom_point(size=2)+
+
+  labs(x = "",y = " ",title="the corrected ratio with step tag cutoff in 500 bp",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+
+#240-------------
+wtap<- Dscorebycutoff(ucsc.gene.pt,gro.seq[1:2],width = 240)
+ntap<- Dscorebycutoff(ucsc.gene.pt,gro.seq[3:4],width = 240)
+cage<- Dscorebycutoff(ucsc.gene.pt,gro.seq[5:6],width = 240)
+
+Dscore<- Reduce(rbind,list(wtap,ntap,cage))
+Dscore$type<- factor(rep(c("wTAP","nTAP","CAGE"),each=31))
+
+ggplot(melt(Dscore[7:12]),aes(x=as.numeric(region),y=value,colour=type,shape = variable,linetype = type,group=interaction(variable,type)))+
+  geom_line(size=1)+geom_point(size=2)+
+  
+  labs(x = "",y = " ",title="the corrected ratio with step tag cutoff in 240",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+
+#120--------------
+wtap<- Dscorebycutoff(ucsc.gene.pt,gro.seq[1:2],width = 120)
+ntap<- Dscorebycutoff(ucsc.gene.pt,gro.seq[3:4],width = 120)
+cage<- Dscorebycutoff(ucsc.gene.pt,gro.seq[5:6],width = 120)
+
+Dscore<- Reduce(rbind,list(wtap,ntap,cage))
+Dscore$type<- factor(rep(c("wTAP","nTAP","CAGE"),each=31))
+
+ggplot(melt(Dscore[7:12]),aes(x=as.numeric(region),y=value,colour=type,shape = variable,linetype = type,group=interaction(variable,type)))+
+  geom_line(size=1)+geom_point(size=2)+
+  
+  labs(x = "",y = " ",title="the corrected ratio with step tag cutoff in 120",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
