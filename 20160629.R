@@ -8,10 +8,18 @@ txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
 require(GenomicRanges)
 #preprocess H3K4me3 after running MAnorm by K562 and H1======
 k562.h1.k4me3.manorm<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.H1.rep1.top2k.20160520/K562.H1.rep1.top2k.20160520_all_peak_MAvalues.xls",header = TRUE)
+k562.h1.k4me3.manorm<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.H1.rep2.top2k.20160524/K562.H1.rep2.top2k.20160524_all_peak_MAvalues.xls",header = TRUE)
+
+k562.gm12878.manorm <- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.Gm12878.H3K4me3.rep1.top20k.20160808/K562.Gm12878.H3K4me3.rep1.top20k.20160808_all_peak_MAvalues.xls",header=TRUE)
+k562.gm12878.manorm <- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.Gm12878.H3K4me3.rep2.top20k.20160808/K562.Gm12878.H3K4me3.rep2.top20k.20160808_all_peak_MAvalues.xls",header=TRUE)
+temp<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/Helas3.H1.H3K4me3.rep2.top20k.20160809/Helas3.H1.H3K4me3.rep2.top20k.20160809_all_peak_MAvalues.xls",header=TRUE)
+k562.h1.k4me3.manorm<- temp
+
 k562.h1.k4me3.manorm<- dropSeqlevels(k562.h1.k4me3.manorm,"chrY")
 k562.h1.k4me3.manorm$K562<- k562.h1.k4me3.manorm$M_value>=-1
 k562.h1.k4me3.manorm$H1hesc<- k562.h1.k4me3.manorm$M_value<=1
 k562.h1.k4me3.manorm$Promoter<-countOverlaps(k562.h1.k4me3.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0
+CTSS.prom <- readRDS("data/CTSS_promoters.rds")
 k562.h1.k4me3.manorm$nonPromoter<-countOverlaps(k562.h1.k4me3.manorm,CTSS.prom)==0
 
 require(VennDiagram)
@@ -37,7 +45,16 @@ grl.k4me3.ma<- split(k562.h1.k4me3.manorm,as.factor(k562.h1.k4me3.manorm$State))
 #H3K4me3 peak annotations
 require(ChIPseeker)
 k562.h1.k4me3.manorm.anno <- annotatePeak(k562.h1.k4me3.manorm, tssRegion=c(-2000, 2000), TxDb =txdb, annoDb="org.Hs.eg.db")
+saveRDS(k562.h1.k4me3.manorm.anno,file = "data/annotated_manorm_H3K4me3.rds")
+
+k562.h1.k4me3.manorm.anno<- readRDS("data/annotated_manorm_H3K4me3.rds")
 k562.h1.k4me3.manorm<- k562.h1.k4me3.manorm.anno@anno
+k562.h1.k4me3.manorm$Feature<- sub(" .*","",k562.h1.k4me3.manorm$annotation)
+#------------
+table(k562.h1.k4me3.manorm$Feature,k562.h1.k4me3.manorm$Promoter)
+tp <- sort(k562.h1.k4me3.manorm)
+tp$score=as.numeric(tp$Promoter)
+export.ucsc(tp,con="data/temp_H3K4me3.bed")
 
 #------------
 boxplot(M_value~State,data=mcols(k562.h1.k4me3.manorm))
