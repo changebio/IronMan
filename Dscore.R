@@ -6,6 +6,64 @@ txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
 require(GenomicFeatures)
 require(genomation)
 
+#gene signal calculation
+##gro and cage signal distribution in promoters
+ucsc.gene<- genes(txdb)
+ucsc.gene.pt<- promoters(ucsc.gene,upstream = 250,downstream = 250)
+gro.sg.m<-lapply(gro.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "V5"))
+gro.sg.p<-lapply(gro.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "V5"))
+
+gro.sg<- melt(rbind(sapply(gro.sg.p,colMeans),sapply(gro.sg.m,colMeans)))
+gro.sg$gene<- c(rep("+",50),rep("-",50))
+gro.sg$read<- c(rep("minus",100),rep("plus",100))
+gro.sg$type <- c(rep("wTAP",200),rep("nTAP",200),rep("CAGE",200))
+gro.sg$Var1<- c(-24.5:24.5)*10
+
+ggplot(gro.sg)+geom_line(data=gro.sg[gro.sg$gene=="+",],aes(x=Var1,y=value,colour=gene,linetype=as.factor(read)))+
+  geom_line(data=gro.sg[gro.sg$gene=="-",],aes(x=Var1,y=-value,colour=gene,linetype=as.factor(read)))+
+  facet_grid(. ~ type)+
+  labs(x = "",y = " ",title="The average signal of Promoters with 500bp width in K562",linetype="read") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
+
+###cage from ENCODE
+cage.seq<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/cage_gr.rds")
+cage.sg.m<-lapply(cage.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "X"))
+cage.sg.p<-lapply(cage.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "X"))
+
+cage.sg<- melt(rbind(sapply(cage.sg.p,colMeans),sapply(cage.sg.m,colMeans)))
+cage.sg$gene<- c(rep("+",50),rep("-",50))
+cage.sg$read<- c(rep("minus",100),rep("plus",100))
+cage.sg$type <- substring(cage.sg$Var2,first = 1,last = nchar(as.character(cage.sg$Var2))-c(rep(6,100),rep(5,100)))
+#cage.sg$region<- c(rep("cell",400),rep("chromatin",200),rep("cytosol",800),rep("nucleolus",200),rep("nucleoplasm",200),rep("nucleus",600),rep("polysome",200))
+cage.sg$Var1<- c(-24.5:24.5)*10
+
+
+gro.cage.sg<- rbind(gro.sg,cage.sg)
+ggplot(gro.cage.sg)+geom_line(data=gro.cage.sg[gro.cage.sg$gene=="+",],aes(x=Var1,y=value,colour=gene,linetype=as.factor(read)))+
+  geom_line(data=gro.cage.sg[gro.cage.sg$gene=="-",],aes(x=Var1,y=-value,colour=gene,linetype=as.factor(read)))+
+  facet_wrap( ~ type)+
+  labs(x = "",y = " ",title="The average signal of Promoters with 500bp width in K562",linetype="read") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
+##other signal distribution (H3K4me3,H3K4me1,....)
+
+
+
 #Dscore function-----
 Dscore<- function(prom){
   tss.sml<-ScoreMatrixList(gro.seq,prom,weight.col = "V5")
@@ -34,7 +92,7 @@ gene.ds.gp<-melt(gene.ds[,c(5,7:9)])
 ggplot(gene.ds.gp)+geom_histogram(data=gene.ds.gp[gene.ds.gp$strand=="+",],aes(x=value,y=..count..,fill=strand))+
   geom_histogram(data=gene.ds.gp[gene.ds.gp$strand=="-",],aes(x=value,y=-..count..,fill=strand))+
   facet_grid(. ~ variable)+
-  labs(x = "",y = " ",title="the distribution of Dscore") +
+  labs(x = "",y = " ",title="Histogram of D score of Promoters with 500bp width in K562") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
         axis.title.x = element_text( face="bold",size=14),
         axis.title.y = element_text(color="black", size=14, face="bold"),
@@ -45,12 +103,6 @@ ggplot(gene.ds.gp)+geom_histogram(data=gene.ds.gp[gene.ds.gp$strand=="+",],aes(x
         strip.text.x = element_text(face = "bold",size=16)
   )
 
-ggplot(gene.ds.gp[gene.ds.gp$strand=="+",])+geom_histogram(aes(x=value,y=..count..,fill=strand))+
-  geom_histogram(data=gene.ds.gp[gene.ds.gp$strand=="-",],aes(x=value,y=-..count..,fill=strand))
-
-apply(as.data.frame(mcols(gro.ds)[,2]),2,function(x)print(hist(x,main = "Histogram of D score of genes in K562 GROcap wTAP")))
-apply(as.data.frame(mcols(gro.ds)[,3]),2,function(x)print(hist(x,main = "Histogram of D score of genes in K562 GROcap nTAP")))
-apply(as.data.frame(mcols(gro.ds)[,4]),2,function(x)print(hist(x,main = "Histogram of D score of genes in K562 CAGE")))
 
 
 grl.k4me3.ma.c <- lapply(k4me3.smt,function(x)resize(x,width = 240,fix="center"))
