@@ -1,15 +1,5 @@
 
 
-# setting color -----------------------------------------------------------
-
-tropical=  c('darkorange', 'dodgerblue', 'hotpink', 'limegreen', 'yellow')
-palette(tropical)
-par(pch=19)
-plot(c(1,2,3),c(1,2,3),col=11)
-# # load refgene hg19 -------------------------------------------------------
-# 
-# load("/opt/rstudio/rstudio1/rstudio1/proj/refdata/refhg19.RData")
-# gtf<- read.table("/mnt/local-disk1/rsgeno2/huangyin/PRC2/Refgenes/genes.gtf",sep = "\t")
 
 #merge multiple version promoter
 ref.name<- c("bin","name","chrom","strand","txStart","txEnd","cdsStart","cdsEnd","exonCount","exonStarts","exonEnds","score","name2","cdsStartStat","cdsEndStat","exonFrames")
@@ -17,13 +7,6 @@ ref.files<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/UCSC_brower_2016-2-17",
 hg19_refGene<- lapply(paste0("/mnt/local-disk1/rsgeno2/MAmotif/UCSC_brower_2016-2-17/",ref.files), function(x)read.table(x,sep="\t"))
 names(hg19_refGene)<- substr(ref.files,1,nchar(ref.files)-4)
 hg19_refGene$knownGene[,2:13]<- hg19_refGene$knownGene
-# refGene<- paste0(hg19_refGene$refGene$V3,hg19_refGene$refGene$V4,hg19_refGene$refGene$V5)
-# knowGene<- paste0(hg19_refGene$knownGene$V2,hg19_refGene$knownGene$V3,hg19_refGene$knownGene$V4)
-# gencode<- paste0(hg19_refGene$hg19_GENCODE_V14$V3,hg19_refGene$hg19_GENCODE_V14$V4,hg19_refGene$hg19_GENCODE_V14$V5)
-# ensembl<- paste0(hg19_refGene$hg19_Ensembl_Genes$V3,hg19_refGene$hg19_Ensembl_Genes$V4,hg19_refGene$hg19_Ensembl_Genes$V5)
-# grid.newpage()
-# T<-venn.diagram(list(RefGene=refGene,KnowGene=knowGene,GENCODE=gencode,Ensembl=ensembl),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
-# grid.draw(T)
 
 #combine the TSS from different refgene 
 CTSS<- rbind(hg19_refGene$knownGene[,3:6],hg19_refGene$hg19_Ensembl_Genes[,3:6],hg19_refGene$hg19_GENCODE_V14[,3:6],hg19_refGene$refGene[,3:6])
@@ -58,6 +41,67 @@ h3k4me3.roadmap<- lapply(paste0("/mnt/local-disk1/rsgeno2/huangyin/RoadMap/MAmot
 names(h3k4me3.roadmap)<- substr(h3k4me3.roadmap.files,1,nchar(h3k4me3.roadmap.files)-24)
 h3k4me3.roadmap<- lapply(h3k4me3.roadmap,function(x)Peaks.Distribution(x,refhg19))
 h3k4me3.ctss<- lapply(h3k4me3,function(x)Peaks.Promoter(x,CTSS.promoter.merge))
+
+
+##use GRanges
+require(GenomicRanges)
+h3k4me3<- lapply(paste0("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K4me3/",h3k4me3.files),function(x)readPeakFile(x,header = TRUE))
+temp<- lapply(lapply(h3k4me3,function(x)Toppeaks(x,top = 8000)),function(x)annotatePeak(x, tssRegion=c(-2000, 2000), TxDb =txdb, annoDb="org.Hs.eg.db"))
+temp1<- sapply(temp,function(x)x@annoStat[,2])
+colnames(temp1)<- substr(h3k4me3.files,1,nchar(h3k4me3.files)-24)
+rownames(temp1) <- temp[[1]]@annoStat[,1]
+ggplot(melt(temp1))+geom_bar(aes(x=factor(Var2,levels = names(sort(colSums(temp1[1:2,])))),y=value,fill=Var1),stat="identity")+
+  labs(x = "",y = "",title="The H3K4me3 distribution in whole genome",fill="") +
+  coord_flip()+
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        #axis.title.y = element_text(color="#993333", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+h3k4me3.df<- lapply(h3k4me3,function(x)Peaks.Distribution(as.data.frame(x),refhg19))
+h3k4me3.top<- lapply(h3k4me3.df,function(x)Toppeaks(as.data.frame(x),top = 20000))
+len.k4me3<-melt(lapply(h3k4me3.top,function(x)return(x$end - x$start)))
+state.k4me3<- melt(lapply(h3k4me3.top,function(x)x$state))
+len.state.h3k4me3<- data.frame(Len=len.k4me3$value,State=state.k4me3$value,Name=len.k4me3$L1)
+ggplot(len.state.h3k4me3)+geom_bar(aes(x=factor(Name,levels = names(sort(table(len.state.h3k4me3[,2:3])[4,]))),fill=State),position = "fill")+
+  labs(x = "",y = "",title="The H3K4me3 distribution in whole genome",fill="") +
+  coord_flip()+
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        #axis.title.y = element_text(color="#993333", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+######
+h3k4me3.mm9 <- lapply(list.files("/mnt/local-disk1/rsgeno2/MAmotif/2.Processing/1.Histone_LICR_mm9_peaks/cut_peaks/H3K4me3",pattern="xls",recursive = TRUE,full.names = TRUE),readPeakFile)
+names(h3k4me3.mm9)<- unlist(strsplit(list.files("/mnt/local-disk1/rsgeno2/MAmotif/2.Processing/1.Histone_LICR_mm9_peaks/cut_peaks/H3K4me3",pattern="xls",recursive = TRUE),"/"))[seq(2,44,2)]
+require(TxDb.Mmusculus.UCSC.mm9.knownGene)
+
+txdb.mm <- TxDb.Mmusculus.UCSC.mm9.knownGene
+#h3k4me3.mm9.anno<- lapply(h3k4me3.mm9,function(x)annotatePeak(x, tssRegion=c(-2000, 2000), TxDb =txdb.mm, annoDb="org.Mm.eg.db"))
+
+h3k4me3.mm9.anno<- lapply(lapply(h3k4me3.mm9,function(x)Toppeaks(x,top=10000)),function(x)annotatePeak(x, tssRegion=c(-2000, 2000), TxDb =txdb.mm, annoDb="org.Mm.eg.db"))
+temp1<- sapply(h3k4me3.mm9.anno,function(x)x@annoStat[,2])
+colnames(temp1)<- paste(names(h3k4me3.mm9),as.character(sapply(h3k4me3.mm9,length)))
+rownames(temp1) <- h3k4me3.mm9.anno[[1]]@annoStat[,1]
+ggplot(melt(temp1))+geom_bar(aes(x=factor(Var2,levels = names(sort(colSums(temp1[1:2,])))),y=value,fill=Var1),stat="identity")+
+  labs(x = "",y = "",title="The H3K4me3 distribution in whole genome with top 10k peaks",fill="") +
+  coord_flip()+
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        #axis.title.y = element_text(color="#993333", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+
+                          
 # load two H3K27ac ChIP Seq data from ENCODE ------------------------------
 h3k27ac.files <- list.files("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K27ac", pattern = "xls",include.dirs = TRUE)
 h3k27ac<- lapply(paste0("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K27ac/",h3k27ac.files),function(x)read.table(x,header = TRUE))
@@ -391,3 +435,26 @@ ggplot(melt(h3k4me1.rpkm))+geom_boxplot(aes(x=variable,y=value,fill=state))+
         axis.text.x = element_text(face="bold",size=14),
         axis.text.y = element_text(face="bold", size=14)
   )+ ylim(1,25)
+
+
+##The process of dealing with CAGE data in ENCODE
+require(CAGEr)
+cage.seq<- read.table("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/K562_Encode_ctss.bed",header = TRUE)
+cage.gr<- GRanges(seqnames = as(cage.seq$chr,"Rle"),ranges = IRanges(start = cage.seq$pos,width = 1),strand = as(cage.seq$strand,"Rle"))
+mcols(cage.gr)<-DataFrame(cage.seq[,4:16])
+cage.gr.m<- cage.gr[strand(cage.gr)=="-"]
+cage.gr.m<- apply(as.data.frame(mcols(cage.gr.m)),2,function(x){temp<-cage.gr.m[x>0];values(temp)<-x[x>0];return(temp)})
+names(cage.gr.m)<- paste0(names(cage.gr.m),".minus")
+cage.gr.p<- cage.gr[strand(cage.gr)=="+"]
+cage.gr.p<- apply(as.data.frame(mcols(cage.gr.p)),2,function(x){temp<-cage.gr.p[x>0];mcols(temp)<-x[x>0];return(temp)})
+names(cage.gr.p)<- paste0(names(cage.gr.p),".plus")
+cage.gr<- c(cage.gr.m,cage.gr.p)
+cage.gr<- cage.gr[sort(names(cage.gr))]
+saveRDS(cage.gr,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/cage_gr.rds")
+
+##some commands
+file.remove(list.files(pattern = "VennDiagram*"))
+
+
+
+
