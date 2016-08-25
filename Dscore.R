@@ -60,6 +60,31 @@ ggplot(gro.cage.sg)+geom_line(data=gro.cage.sg[gro.cage.sg$gene=="+",],aes(x=Var
         axis.text.y = element_text(face="bold", size=14),
         strip.text.x = element_text(face = "bold",size = 16)
   )
+### the average sigal for all merged cage
+ucsc.gene<- genes(txdb)
+ucsc.gene.pt<- promoters(ucsc.gene,upstream = 250,downstream = 250)
+all.sg.m<-lapply(list(all.gr.m,all.gr.p),function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "score"))
+all.sg.p<-lapply(list(all.gr.m,all.gr.p),function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "score"))
+
+all.sg<- melt(rbind(sapply(all.sg.p,colMeans),sapply(all.sg.m,colMeans)))
+all.sg$gene<- c(rep("+",50),rep("-",50))
+all.sg$read<- c(rep("minus",100),rep("plus",100))
+all.sg$Var1<- c(-24.5:24.5)*10
+saveRDS(all.sg,file = "data/all.sg.rds")
+ggplot(all.sg)+geom_line(data=all.sg[all.sg$gene=="+",],aes(x=Var1,y=value,colour=gene,linetype=as.factor(read)))+
+  geom_line(data=all.sg[all.sg$gene=="-",],aes(x=Var1,y=-value,colour=gene,linetype=as.factor(read)))+
+  labs(x = "",y = " ",title="The average signal of Promoters with 500bp width in all cells",linetype="read") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
+
+
 ##other signal distribution (H3K4me3,H3K4me1,....)
 
 
@@ -119,6 +144,37 @@ ggplot(gene.ds.gp)+geom_histogram(data=gene.ds.gp[gene.ds.gp$strand=="+",],aes(x
         axis.text.y = element_text(face="bold", size=14),
         strip.text.x = element_text(face = "bold",size=16)
   )
+
+### the Dscore of all merged cage
+all.cage.ds<- Dscore(all.gr.p,all.gr.m,ucsc.gene.pt,wt = "score")
+saveRDS(all.cage.ds,file = "data/all.cage.ds.rds")
+all.cage.ds<- as.data.frame(all.cage.ds)
+
+ggplot(all.cage.ds)+geom_histogram(aes(x=Dscore,y=..count..,fill=strand))+
+  labs(x = "",y = " ",title="Histogram of D score of Promoters with 500bp width") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size=16)
+  )
+
+ggplot(all.cage.ds)+geom_histogram(data=all.cage.ds[all.cage.ds$strand=="+",],aes(x=Dscore,y=..count..,fill=strand))+
+  geom_histogram(data=all.cage.ds[all.cage.ds$strand=="-",],aes(x=Dscore,y=-..count..,fill=strand))+
+  labs(x = "",y = " ",title="Histogram of D score of Promoters with 500bp width") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size=16)
+  )
+
 
 ##
 
