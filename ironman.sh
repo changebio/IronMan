@@ -7,7 +7,6 @@ MAnorm --p1=../../macs.20151224/H3K4me1.top20k/K562.H3k4me1.Rep2.macs.20160512_T
 MAnorm --p1=../../macs.20151224/H3K4me1.top20k/K562.H3k4me1.Rep1.macs.20160512_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me1.top20k/K562.H3k4me1.Rep2.macs.20160512_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me1/wgEncodeBroadHistoneK562H3k4me1StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me1/wgEncodeBroadHistoneK562H3k4me1StdAlnRep2.bed -s -o K562.H3K4me1.both.top20k.20160602
 MAnorm --p1=../../macs.20151224/H3K4me1.top30k/K562.H3k4me1.Rep1.macs.20160512_Top30K_peaks.xls --p2=../../macs.20151224/H3K4me1.top30k/K562.H3k4me1.Rep2.macs.20160512_Top30K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me1/wgEncodeBroadHistoneK562H3k4me1StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me1/wgEncodeBroadHistoneK562H3k4me1StdAlnRep2.bed -s -o K562.H3K4me1.both.top30k.20160607
 
-MAnorm --p1=../../macs.20151224/H3K4me1.top20k/K562.H3k4me1.Rep1.macs.20160512_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/K562.H3k4me3.Rep2.macs.20151224_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/K562/wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/K562/wgEncodeBroadHistoneK562H3k4me3StdAlnRep2.bed -s -o K562.H3K4me3.both.top20k.20160607
 
 MAnorm --p1=../../macs.20151224/H3K27ac.top20k/K562.H3k27ac.Rep1.macs.20151224_Top20K_peaks.xls --p2=../../macs.20151224/H3K27ac.top20k/K562.H3k27ac.Rep2.macs.20160512_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K27ac/Rep1/wgEncodeBroadHistoneK562H3K27acStdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K27ac/Rep2/wgEncodeBroadHistoneK562H3K27acStdAlnRep2.bed -s -o K562.H3K27ac.both.top20k.20160607
 
@@ -37,12 +36,6 @@ MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Nhlf.H3k4me3.Rep1.macs.20160512_To
 
 
 
-
-
-
-
-
-
 #20160811
 MAnorm --p1=Mesendoderm.GSM752983.H3K4me3.AK135_Top20K_peaks.xls --p2=H1.GSM605315.H3K4me3.SAK676_Top20K_peaks.xls --r1=/mnt/local-disk1/rsgeno2/huangyin/RoadMap/data/mesendoderm/2012/GSM752983_UCSD.H1_BMP4_Derived_Mesendoderm_Cultured_Cells.H3K4me3.AK135.bed --r2=/mnt/local-disk1/rsgeno2/huangyin/RoadMap/data/h1cell/2011/GSM605315_UCSD.H1.H3K4me3.SAK676.bed -s -o Mesendoderm.H1.top20k.20160811
 MAnorm --p1=Mesenchymal.GSM767349.H3K4me3.SK467_Top20K_peaks.xls --p2=H1.GSM605315.H3K4me3.SAK676_Top20K_peaks.xls --r1=/mnt/local-disk1/rsgeno2/huangyin/RoadMap/data/mesenchymal/2012/GSM767349_UCSD.H1_Derived_Mesenchymal_Stem_Cells.H3K4me3.SK467.bed --r2=/mnt/local-disk1/rsgeno2/huangyin/RoadMap/data/h1cell/2011/GSM605315_UCSD.H1.H3K4me3.SAK676.bed -s -o Mesenchymal.H1.top20k.20160811
@@ -53,3 +46,21 @@ MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Hct116.H3K4me3.Rep1.macs.20160523_
 MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Hsmm.H3k4me3.Rep1.macs.20160514_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/H1.H3k4me3.Rep1.macs.20150514_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/Hsmm/wgEncodeBroadHistoneHsmmH3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/H1hESC/wgEncodeBroadHistoneH1hescH3k4me3StdAlnRep1.bed -s -o Hsmm.H1.H3K4me3.rep1.top20k.20160815
 MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Hsmm.H3k4me3.Rep2.macs.20160517_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/H1.H3k4me3.Rep2.macs.20151224_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/Hsmm/wgEncodeBroadHistoneHsmmH3k4me3StdAlnRep2.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/H1hESC/wgEncodeBroadHistoneH1hescH3k4me3StdAlnRep2.bed -s -o Hsmm.H1.H3K4me3.rep2.top20k.20160815
  
+
+
+##using two rep to define confident peaks
+
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/K562.H3k4me3.Rep1.macs.20150513_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/K562.H3k4me3.Rep2.macs.20151224_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/K562/wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/K562/wgEncodeBroadHistoneK562H3k4me3StdAlnRep2.bed -s -o K562.H3K4me3.both.top20k.20160824
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Gm12878.H3k4me3.Rep1.macs.20150514_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/Gm12878.H3k4me3.Rep2.macs.20160517_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/Gm12878/wgEncodeBroadHistoneGm12878H3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/Gm12878/wgEncodeBroadHistoneGm12878H3k4me3StdAlnRep2.bed -s -o GM12878.H3K4me3.both.top20k.20160824
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/H1.H3k4me3.Rep1.macs.20150514_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/H1.H3k4me3.Rep2.macs.20151224_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/H1hESC/wgEncodeBroadHistoneH1hescH3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/H1hESC/wgEncodeBroadHistoneH1hescH3k4me3StdAlnRep2.bed -s -o H1hesc.H3K4me3.both.top20k.20160824
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/H293.H3k4me3.Rep1.macs.20150514_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/Hek293.H3k4me3.Rep2.macs.20160517_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/Hek293/wgEncodeUwHistoneHek293H3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/Hek293/wgEncodeUwHistoneHek293H3k4me3StdAlnRep2.bed -s -o Hek293.H3K4me3.both.top20k.20160824
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Helas3.H3k4me3.Rep1.macs.20151224_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/Helas3.H3k4me3.Rep2.macs.20160517_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/Helas3/wgEncodeBroadHistoneHelas3H3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/Helas3/wgEncodeBroadHistoneHelas3H3k4me3StdAlnRep2.bed -s -o Helas3.H3K4me3.both.top20k.20160824o
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Hepg2.H3k4me3.Rep1.macs.20160514_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/Hepg2.H3k4me3.Rep2.macs.20160517_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/Hepg2/wgEncodeBroadHistoneHepg2H3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/Hepg2/wgEncodeBroadHistoneHepg2H3k4me3StdAlnRep2.bed -s -o Hepg2.H3K4me3.both.top20k.20160824
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Hmec.H3k4me3.Rep1.macs.20151224_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/Hmec.H3k4me3.Rep2.macs.20150514_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/Hmec/wgEncodeBroadHistoneHmecH3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/Hmec/wgEncodeBroadHistoneHmecH3k4me3StdAlnRep2.bed -s -o Hmec.H3K4me3.both.top20k.20160824
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Hsmm.H3k4me3.Rep1.macs.20160514_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/Hsmm.H3k4me3.Rep2.macs.20160517_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/Hsmm/wgEncodeBroadHistoneHsmmH3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/Hsmm/wgEncodeBroadHistoneHsmmH3k4me3StdAlnRep2.bed -s -o Hsmm.H3K4me3.both.top20k.20160824
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Hsmmt.H3k4me3.Rep1.macs.20160516_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/Hsmmt.H3k4me3.Rep2.macs.20160517_Top20K_peaks.xls --r1=../../3.Histone_Broad_hg19/H3K4me3/Hsmmt/wgEncodeBroadHistoneHsmmtH3k4me3StdAlnRep1.bed --r2=../../3.Histone_Broad_hg19/H3K4me3/Hsmmt/wgEncodeBroadHistoneHsmmtH3k4me3StdAlnRep2.bed -s -o Hsmmt.H3K4me3.both.top20k.20160824
+MAnorm --p1=../../macs.20151224/H3K4me3.top2k/Mcf7.H3K4me3.Rep1.macs.20160522_Top20K_peaks.xls --p2=../../macs.20151224/H3K4me3.top2k/Mcf7.H3K4me3.Rep2.macs.20160522_Top20K_peaks.xls --r1=../../ENCODE/wgEncodeUwHistoneMcf7H3k4me3StdAlnRep1.bed --r2=../../ENCODE/wgEncodeUwHistoneMcf7H3k04me3StdAlnRep2.bed -s -o Mcf.H3K4me3.both.top20k.20160824
+
+
+
+
