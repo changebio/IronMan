@@ -10,17 +10,19 @@ require(genomation)
 ##gro and cage signal distribution in promoters
 ucsc.gene<- genes(txdb)
 ucsc.gene.pt<- promoters(ucsc.gene,upstream = 250,downstream = 250)
-gro.sg.m<-lapply(gro.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "V5"))
-gro.sg.p<-lapply(gro.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "V5"))
+gro.sg.p<-lapply(gro.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "V5"))
+gro.sg.m<-lapply(gro.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "V5"))
 
 gro.sg<- melt(rbind(sapply(gro.sg.p,colMeans),sapply(gro.sg.m,colMeans)))
 gro.sg$gene<- c(rep("+",50),rep("-",50))
-gro.sg$read<- c(rep("minus",100),rep("plus",100))
+gro.sg$read<- factor(c(rep("minus",100),rep("plus",100)),levels = c("plus","minus"))
 gro.sg$type <- c(rep("wTAP",200),rep("nTAP",200),rep("CAGE",200))
 gro.sg$Var1<- c(-24.5:24.5)*10
 
+
 ggplot(gro.sg)+geom_line(data=gro.sg[gro.sg$gene=="+",],aes(x=Var1,y=value,colour=gene,linetype=as.factor(read)))+
   geom_line(data=gro.sg[gro.sg$gene=="-",],aes(x=Var1,y=-value,colour=gene,linetype=as.factor(read)))+
+  scale_color_manual(values=c("#0099FF","#FF6600"))+
   facet_grid(. ~ type)+
   labs(x = "",y = " ",title="The average signal of Promoters with 500bp width in K562",linetype="read") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
@@ -35,12 +37,12 @@ ggplot(gro.sg)+geom_line(data=gro.sg[gro.sg$gene=="+",],aes(x=Var1,y=value,colou
 
 ###cage from ENCODE
 cage.seq<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/cage_gr.rds")
-cage.sg.m<-lapply(cage.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "V5"))
-cage.sg.p<-lapply(cage.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "V5"))
+cage.sg.p<-lapply(cage.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "V5"))
+cage.sg.m<-lapply(cage.seq,function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "V5"))
 
 cage.sg<- melt(rbind(sapply(cage.sg.p,colMeans),sapply(cage.sg.m,colMeans)))
 cage.sg$gene<- c(rep("+",50),rep("-",50))
-cage.sg$read<- c(rep("minus",100),rep("plus",100))
+cage.sg$read<- factor(c(rep("minus",100),rep("plus",100)),levels = c("plus","minus"))
 cage.sg$type <- substring(cage.sg$Var2,first = 1,last = nchar(as.character(cage.sg$Var2))-c(rep(6,100),rep(5,100)))
 #cage.sg$region<- c(rep("cell",400),rep("chromatin",200),rep("cytosol",800),rep("nucleolus",200),rep("nucleoplasm",200),rep("nucleus",600),rep("polysome",200))
 cage.sg$Var1<- c(-24.5:24.5)*10
@@ -49,6 +51,7 @@ cage.sg$Var1<- c(-24.5:24.5)*10
 gro.cage.sg<- rbind(gro.sg,cage.sg)
 ggplot(gro.cage.sg)+geom_line(data=gro.cage.sg[gro.cage.sg$gene=="+",],aes(x=Var1,y=value,colour=gene,linetype=as.factor(read)))+
   geom_line(data=gro.cage.sg[gro.cage.sg$gene=="-",],aes(x=Var1,y=-value,colour=gene,linetype=as.factor(read)))+
+  scale_color_manual(values=c("#0099FF","#FF6600"))+
   facet_wrap( ~ type)+
   labs(x = "",y = " ",title="The average signal of Promoters with 500bp width in K562",linetype="read") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
@@ -63,16 +66,19 @@ ggplot(gro.cage.sg)+geom_line(data=gro.cage.sg[gro.cage.sg$gene=="+",],aes(x=Var
 ### the average sigal for all merged cage
 ucsc.gene<- genes(txdb)
 ucsc.gene.pt<- promoters(ucsc.gene,upstream = 250,downstream = 250)
-all.sg.m<-lapply(list(all.gr.m,all.gr.p),function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "score"))
-all.sg.p<-lapply(list(all.gr.m,all.gr.p),function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "score"))
+all.gr.m<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_minus_pool.rds")
+all.gr.p<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_plus_pool.rds")
+all.sg.p<-lapply(list(all.gr.m,all.gr.p),function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "V5"))
+all.sg.m<-lapply(list(all.gr.m,all.gr.p),function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "V5"))
 
 all.sg<- melt(rbind(sapply(all.sg.p,colMeans),sapply(all.sg.m,colMeans)))
 all.sg$gene<- c(rep("+",50),rep("-",50))
-all.sg$read<- c(rep("minus",100),rep("plus",100))
+all.sg$read<- factor(c(rep("minus",100),rep("plus",100)),levels = c("plus","minus"))
 all.sg$Var1<- c(-24.5:24.5)*10
 saveRDS(all.sg,file = "data/all.sg.rds")
 ggplot(all.sg)+geom_line(data=all.sg[all.sg$gene=="+",],aes(x=Var1,y=value,colour=gene,linetype=as.factor(read)))+
   geom_line(data=all.sg[all.sg$gene=="-",],aes(x=Var1,y=-value,colour=gene,linetype=as.factor(read)))+
+  scale_color_manual(values=c("#0099FF","#FF6600"))+
   labs(x = "",y = " ",title="The average signal of Promoters with 500bp width in all cells",linetype="read") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
         axis.title.x = element_text( face="bold",size=14),
@@ -113,8 +119,10 @@ names(gc.ds)<- substring(names(gro.cage.seq),first = 1,last = nchar(names(gro.ca
 gc.ds.idx<- Reduce(intersect,lapply(gc.ds,names))
 gene.ds<- sapply(gc.ds,function(x)x[gc.ds.idx]$Dscore)
 gene.ds<- as.data.frame(gene.ds)
-gene.ds$strand<- as.character(strand(ucsc.gene.pt[gc.ds.idx]))
+gene.ds$strand<- factor(as.character(strand(ucsc.gene.pt[gc.ds.idx])),levels = c("+","-"))
 saveRDS(gene.ds,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/gene.ds.rds")
+
+gene.ds<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/gene.ds.rds")
 gene.ds.gp<-melt(gene.ds)
 
 ggplot(gene.ds.gp)+geom_histogram(aes(x=value,y=..count..,fill=strand))+
@@ -133,6 +141,7 @@ ggplot(gene.ds.gp)+geom_histogram(aes(x=value,y=..count..,fill=strand))+
 
 ggplot(gene.ds.gp)+geom_histogram(data=gene.ds.gp[gene.ds.gp$strand=="+",],aes(x=value,y=..count..,fill=strand))+
   geom_histogram(data=gene.ds.gp[gene.ds.gp$strand=="-",],aes(x=value,y=-..count..,fill=strand))+
+  scale_fill_manual(values=c("#0099FF","#FF6600"))+
   facet_wrap( ~ variable)+
   labs(x = "",y = " ",title="Histogram of D score of Promoters with 500bp width in K562") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
@@ -145,9 +154,12 @@ ggplot(gene.ds.gp)+geom_histogram(data=gene.ds.gp[gene.ds.gp$strand=="+",],aes(x
         strip.text.x = element_text(face = "bold",size=16)
   )
 
+
 ### the Dscore of all merged cage
 all.cage.ds<- Dscore(all.gr.p,all.gr.m,ucsc.gene.pt,wt = "score")
 saveRDS(all.cage.ds,file = "data/all.cage.ds.rds")
+
+all.cage.ds<- readRDS("data/all.cage.ds.rds")
 all.cage.ds<- as.data.frame(all.cage.ds)
 
 ggplot(all.cage.ds)+geom_histogram(aes(x=Dscore,y=..count..,fill=strand))+
@@ -164,6 +176,7 @@ ggplot(all.cage.ds)+geom_histogram(aes(x=Dscore,y=..count..,fill=strand))+
 
 ggplot(all.cage.ds)+geom_histogram(data=all.cage.ds[all.cage.ds$strand=="+",],aes(x=Dscore,y=..count..,fill=strand))+
   geom_histogram(data=all.cage.ds[all.cage.ds$strand=="-",],aes(x=Dscore,y=-..count..,fill=strand))+
+  scale_fill_manual(values=c("#0099FF","#FF6600"))+
   labs(x = "",y = " ",title="Histogram of D score of Promoters with 500bp width") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
         axis.title.x = element_text( face="bold",size=14),
@@ -174,6 +187,39 @@ ggplot(all.cage.ds)+geom_histogram(data=all.cage.ds[all.cage.ds$strand=="+",],ae
         axis.text.y = element_text(face="bold", size=14),
         strip.text.x = element_text(face = "bold",size=16)
   )
+
+### the Dscore of wTAP - noTAP
+tap.p<- intersectScoreMatrixList(ScoreMatrixList(gro.sg.p[1:4]))
+tap.p.rs<- lapply(tap.p,rowSums)
+tap.p.rs$plus<- tap.p.rs$GSM1480321_K562_GROcap_wTAP_plus - tap.p.rs$GSM1480322_K562_GROcap_noTAP_plus
+tap.p.rs$minus<- tap.p.rs$GSM1480321_K562_GROcap_wTAP_minus - tap.p.rs$GSM1480322_K562_GROcap_noTAP_minus
+tap.p.ds<- (tap.p.rs$plus-tap.p.rs$minus)/(tap.p.rs$plus+tap.p.rs$minus)
+
+tap.m<- intersectScoreMatrixList(ScoreMatrixList(gro.sg.m[1:4]))
+tap.m.rs <- lapply(tap.m,rowSums)
+tap.m.rs$plus<- tap.m.rs$GSM1480321_K562_GROcap_wTAP_plus - tap.m.rs$GSM1480322_K562_GROcap_noTAP_plus
+tap.m.rs$minus<- tap.m.rs$GSM1480321_K562_GROcap_wTAP_minus - tap.m.rs$GSM1480322_K562_GROcap_noTAP_minus
+tap.m.ds<- (tap.m.rs$plus - tap.m.rs$minus)/(tap.m.rs$plus+tap.m.rs$minus)
+
+tap.ds<- data.frame(Dscore=c(tap.p.ds,tap.m.ds),strand=c(rep("+",length(tap.p.ds)),rep("-",length(tap.m.ds))))
+
+
+
+ggplot(tap.ds)+geom_histogram(data=tap.ds[tap.ds$strand=="+",],aes(x=Dscore,y=..count..,fill=strand))+
+  geom_histogram(data=tap.ds[tap.ds$strand=="-",],aes(x=Dscore,y=-..count..,fill=strand))+
+  xlim(-1,1)+
+  scale_fill_manual(values=c("#0099FF","#FF6600"))+
+  labs(x = "",y = " ",title="Histogram of D score of Promoters with 500bp width(wTAP - noTAP)") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size=16)
+  )
+
 
 
 ##
