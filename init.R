@@ -450,7 +450,29 @@ cage.gr.p<- apply(as.data.frame(mcols(cage.gr.p)),2,function(x){temp<-cage.gr.p[
 names(cage.gr.p)<- paste0(names(cage.gr.p),".plus")
 cage.gr<- c(cage.gr.m,cage.gr.p)
 cage.gr<- cage.gr[sort(names(cage.gr))]
+cage.gr<- lapply(cage.gr,function(x){names(mcols(x))<- "V5";return(x)})
 saveRDS(cage.gr,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/cage_gr.rds")
+
+###the process of dealing with CAGE bigWig from ENCODE
+cage.bw.files<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/CAGE",pattern = ".bigWig",full.names = TRUE)
+cage.bw<- lapply(cage.bw.files,import.bw)
+cage.bw[1:4]<- lapply(cage.bw[1:4],function(x){strand(x)<-"+";return(x)})
+cage.bw[5:8]<- lapply(cage.bw[5:8],function(x){strand(x)<-"-";return(x)})
+names(cage.bw)<- paste0(c("562CellClustersRep1","562CellClustersRep2","562CellSignalRep1","562CellSignalRep2"),c(rep(".minus",4),rep(".plus",4)))
+cage.bw<- cage.bw[sort(names(cage.bw))]
+cage.bw<- lapply(cage.bw,function(x){names(mcols(x))<- "V5";return(x)})
+saveRDS(cage.bw,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/cage_bw.rds")
+
+
+###the process of all cage data in FANTOM
+all.gr.m<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/hg19.ctss_all_minus_pool.bed")
+mcols(all.gr.m)<- all.gr.m$score
+names(mcols(all.gr.m))<- "V5"
+saveRDS(all.gr.m,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_minus_pool.rds")
+all.gr.p<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/hg19.ctss_all_plus_pool.bed")
+mcols(all.gr.p)<- all.gr.p$score
+names(mcols(all.gr.p))<- "V5"
+saveRDS(all.gr.p,file="/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_plus_pool.rds")
 
 ##some commands
 file.remove(list.files(pattern = "VennDiagram*"))
