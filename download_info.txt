@@ -1,0 +1,11 @@
+#CTCF
+http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeUwTfbs/wgEncodeUwTfbsK562CtcfStdRawRep1.bigWig
+http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeUwTfbs/wgEncodeUwTfbsK562CtcfStdRawRep2.bigWig
+
+#wgEncodeUchi
+http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeUchicagoTfbs/wgEncodeUchicagoTfbsK562EfosControlSig.bigWig
+http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeUchicagoTfbs/wgEncodeUchicagoTfbsK562Egata2ControlSig.bigWig
+http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeUchicagoTfbs/wgEncodeUchicagoTfbsK562Ehdac8ControlSig.bigWig
+http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeUchicagoTfbs/wgEncodeUchicagoTfbsK562EjunbControlSig.bigWig
+http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeUchicagoTfbs/wgEncodeUchicagoTfbsK562EjundControlSig.bigWig
+http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeUchicagoTfbs/wgEncodeUchicagoTfbsK562Enr4a1ControlSig.bigWig
