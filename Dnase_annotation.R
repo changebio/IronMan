@@ -57,7 +57,69 @@ dnase.K562.anno.sl<- dnase.K562.anno.sl[sapply(dnase.K562.anno.sl,function(x)len
 
 
 
-#####
+##Cage coverage--------------
+
+cage.seq.cov<-sapply(1:length(cage.seq),function(i){
+  cage.cov<- sapply(dnase.K562.anno.sl,function(x)ScoreMatrixBin(cage.seq[[i]],windows = x,bin.num = 1,weight.col = "V5")@.Data*500)
+  return(sapply(cage.cov, function(x)sum(x>3)/length(x)))
+})
+
+
+cage.seq.cov<- as.data.frame(cage.seq.cov)
+colnames(cage.seq.cov)<- names(cage.seq)
+saveRDS(cage.seq.cov,file = "data/CAGE_Seq_cov.rds")
+require(ggplot2)
+require(reshape2)
+cage.seq.cov$region<- row.names(cage.seq.cov)
+gd<- melt(cage.seq.cov)
+ggplot(gd)+geom_bar(aes(x=region,y=value,fill=variable),stat = "identity",position = "dodge")+coord_flip()+
+  labs(x = "",y = " ",title="The CAGE distribution in the whole genome",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+
+
+gro.seq.cov<-sapply(1:length(gro.seq),function(i){
+  gro.cov<- sapply(dnase.K562.anno.sl,function(x)ScoreMatrixBin(gro.seq[[i]],windows = x,bin.num = 1,weight.col = "V5")@.Data*500)
+  return(sapply(gro.cov, function(x)sum(x>3)/length(x)))
+})
+saveRDS(gro.seq.cov,file = "data/GRO_Seq_cov.rds")
+gro.seq.cov<- as.data.frame(gro.seq.cov)
+colnames(gro.seq.cov)<- substring(names(gro.seq),first = 1,last = nchar(names(gro.seq))-9)
+
+
+all.seq<-list(all.gr.m,all.gr.p)
+all.seq.cov<-sapply(1:length(all.seq),function(i){
+  all.cov<- sapply(dnase.K562.anno.sl,function(x)ScoreMatrixBin(all.seq[[i]],windows = x,bin.num = 1,weight.col = "V5")@.Data*500)
+  return(sapply(all.cov, function(x)sum(x>3)/length(x)))
+})
+saveRDS(all.seq.cov,file = "data/all_seq_cov.rds")
+all.seq.cov<- as.data.frame(all.seq.cov)
+colnames(all.seq.cov)<- c("CTSS_all_minus_pool","CTSS_all_plus_pool")
+all.gro.cage.cov<- cbind(cage.seq.cov,gro.seq.cov)
+all.gro.cage.cov<- cbind(all.gro.cage.cov,all.seq.cov)
+saveRDS(all.gro.cage.cov,file = "data/all_gro_cage_cov.rds")
+
+ggplot(melt(all.gro.cage.cov[,27:33]))+geom_bar(aes(x=region,y=value,fill=variable),stat = "identity",position = "dodge")+coord_flip()+
+  labs(x = "",y = " ",title="The CAGE distribution in the whole genome (FANTOM)",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+
+#======================================
+
+
+###----------------
 sml = ScoreMatrixBin(cage.seq[[2]],windows = dnase.K562.anno.sl[[7]],weight.col = "V5",bin.num = 50)
 sml.scaled <- scaleScoreMatrix(sml)
 multiHeatMatrix(sml,
