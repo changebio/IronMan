@@ -118,36 +118,100 @@ ggplot(melt(all.gro.cage.cov[,27:33]))+geom_bar(aes(x=region,y=value,fill=variab
 
 #======================================
 
-
-###----------------
-sml = ScoreMatrixBin(cage.seq[[2]],windows = dnase.K562.anno.sl[[7]],weight.col = "V5",bin.num = 50)
-sml.scaled <- scaleScoreMatrix(sml)
-multiHeatMatrix(sml,
-                clustfun=function(x) kmeans(x, centers=3)$cluster,
-                cex.axis=0.8,xcoords=c(-25,25),
-                winsorize=c(0,99),
-                legend.name=names(sml),xlab="region around TSS")
-
-plotMeta(sml)
+##TF coverage--------------
 
 require(rtracklayer)
-tf.bw.files <- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/SydhTfbsK562/",pattern = "bigWig")[1:20]
+tf.bw.files <- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/SydhTfbsK562/",pattern = "bigWig")
+tf.bw.files.uni<- tf.bw.files[!duplicated(substring(tf.bw.files,first = 1,last=24))]
+tf.bw.sbin<- lapply(21:40,function(i,tf){
+  tf.bw<- import.bw(paste0("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/SydhTfbsK562/",tf[i]),asRle = TRUE)
+  tf.cov<- lapply(dnase.K562.anno.sl,function(x)ScoreMatrixBin(tf.bw,windows = x,bin.num=50))
+  return(tf.cov)},tf=tf.bw.files.uni)
 
-lapply(1:length(tf.bw.files),function(i,tf){
-  Mazab<- import.bw(paste0("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/SydhTfbsK562/",tf[i]),asRle = TRUE)
-  sml = ScoreMatrixBin(Mazab,windows = dnase.K562.anno.sl[[7]],bin.num = 50)
-  sml.scaled <- scaleScoreMatrix(sml)
-  
-  heatMatrix(sml,
-             clustfun=function(x) kmeans(x, centers=3)$cluster,
-             cex.axis=0.8,xlab=tf[i])
-  plotMeta(sml,xlab = tf[i])
-  heatMatrix(sml.scaled,
-             clustfun=function(x) kmeans(x, centers=3)$cluster,
-             cex.axis=0.8,xlab=tf[i])
-  plotMeta(sml.scaled,xlab = tf[i])
-  
-},tf=tf.bw.files)
+names(tf.bw.sbin)<- tf.bw.files.uni[21:40]
+saveRDS(tf.bw.sbin,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/TF_bw_sbin_uni21-40.rds")
+
+
+saveRDS(tf.bw.sbin,file = "data/TF_bw_sbin_21-25.rds")
+
+
+tf.bw.sbin.m<- 
+
+Dnase.TFbin.ms<- function(tf.bw.sbin,scale=FALSE){
+  tf.bw.sbin.m<- lapply(1:length(tf.bw.sbin),function(i,tf){
+    if(scale){
+      temp<- melt(as.data.frame(sapply(tf[[i]],function(x)colMeans(scaleScoreMatrix(x)))))
+    }else{
+      temp<- melt(as.data.frame(sapply(tf[[i]],colMeans)))
+    }
+    
+    temp$Var1<- c(-24.5:24.5)*10
+    temp$TF <- names(tf)[i]
+    return(temp)
+  },tf=tf.bw.sbin)
+  tf.bw.sbin.m<- Reduce(rbind,tf.bw.sbin.m)
+  return(tf.bw.sbin.m)
+}
+
+a<- Dnase.TFbin.ms(tf.bw.sbin,scale = TRUE)
+b<- Dnase.TFbin.ms(tf.bw.sbin)
+ggplot(b)+geom_line(aes(x=Var1,y=value,colour=TF))+
+  facet_wrap(~variable)+
+  labs(x = "",y = " ",title="The average signal in Dnase annotation") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 8)
+  )
+
+
+
+TFbw.geom_line<- function(tf.bw.sbin.m){
+lapply(1:length(tf.bw.sbin.m),function(i,tf.bw.sbin.m){
+temp<- as.data.frame(tf.bw.sbin.m[[i]])
+temp<- melt(temp)
+temp$Var1<- c(-24.5:24.5)*10
+ggplot(temp)+geom_line(aes(x=Var1,y=value))+
+  facet_wrap(~variable)+
+  labs(x = "",y = " ",title=names(tf.bw.sbin.m)[i]) +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 8)
+  )},tf.bw.sbin.m=tf.bw.sbin.m)
+}
+
+tf.bw.sbin.sm<-
+
+tf.bw.cov<- lapply(1:length(tf.bw.files),function(i,tf){
+  tf.bw<- import.bw(paste0("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/SydhTfbsK562/",tf[i]),asRle = TRUE)
+  tf.cov<- sapply(dnase.K562.anno.sl,function(x)ScoreMatrixBin(tf.bw,windows = x,bin.num = 1,weight.col = "V5")@.Data*500)
+  return(sapply(tf.cov, function(x)sum(x>3)/length(x)))},tf=tf.bw.files)
+saveRDS(tf.bw.cov,file = "data/TF_bw_cov.rds")
+
+tf.bw.cov<- as.data.frame(tf.bw.cov)
+colnames(tf.bw.cov)<-substring(tf.bw.files,first = 9,last = nchar(tf.bw.files)-7)
+tf.bw.cov$region<- row.names(tf.bw.cov)
+gd<- melt(tf.bw.cov)
+ggplot(gd[1:44,])+geom_bar(aes(x=region,y=value,fill=variable),stat = "identity",position = "dodge")+coord_flip()+
+  labs(x = " ",y = " ",title="The TFs distribution in the whole genome",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14)
+  )
+
 
 require(VennDiagram)
 require(gridExtra)
