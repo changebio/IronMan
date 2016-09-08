@@ -148,3 +148,7 @@ plot(compKEGG, showCategory = 15, title = "KEGG Pathway Enrichment Analysis")
 
 peakAnnoList <- lapply(files, annotatePeak, TxDb=txdb, 
                        tssRegion=c(-3000, 3000), verbose=FALSE)
+
+
+
+
