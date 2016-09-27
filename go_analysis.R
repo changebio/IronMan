@@ -1,23 +1,6 @@
 require(DOSE)
 require(clusterProfiler)
-data(geneList) 
-gene = names(geneList)[abs(geneList) > 2] 
-david = enrichDAVID(gene = gene, idType="ENTREZ_GENE_ID", listType="Gene", annotation="KEGG_PATHWAY")
-
-
 library(org.Hs.eg.db)
-data(geneList)
-gene <- names(geneList)[abs(geneList) > 2]
-gene.df <- bitr(gene, fromType = "ENTREZID", toType = c("ENSEMBL", "SYMBOL"), annoDb = "org.Hs.eg.db") 
-
-head(gene.df)
-ggo <- groupGO(gene     = dnase.K562.anno.sl[[1]]$geneId,
-               organism = "human",
-               ont      = "CC",
-               level    = 3,
-               readable = TRUE)
-
-head(ggo)
 
 ego<- lapply(1:44,function(i,x)enrichGO(gene = x[[i]]$geneId,organism = "human",ont = "CC",pvalueCutoff = 0.01,pAdjustMethod = "BH",qvalueCutoff = 0.05,readable = TRUE),x = dnase.K562.anno.sl)
 saveRDS(ego,file = "data/Dnase_K562_CC_ego.rds")
