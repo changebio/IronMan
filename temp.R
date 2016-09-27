@@ -6,12 +6,27 @@ require(clusterProfiler)
 ##read manorm results
 ma.h3k4me1<-readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me1/K562.H3K4me1.both.top30k.20160607/K562.H3K4me1.both.top30k.20160607_all_peak_MAvalues.xls")
 ma.h3k4me1<- ma.h3k4me1[ma.h3k4me1$M_value>= -1 & ma.h3k4me1$M_value<= 1]
-ma.h3k4me3<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.H3K4me3.both.top20k.20160607/K562.H3K4me3.both.top20k.20160607_all_peak_MAvalues.xls")
+ma.h3k4me3<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.H3K4me3.both.top20k.20160824/K562.H3K4me3.both.top20k.20160824_all_peak_MAvalues.xls")
 ma.h3k4me3<- ma.h3k4me3[ma.h3k4me3$M_value>= -1 & ma.h3k4me3$M_value<= 1]
 ma.h3k27ac<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K27ac/K562.H3K27ac.both.top20k.20160607/K562.H3K27ac.both.top20k.20160607_all_peak_MAvalues.xls")
 ma.h3k27ac<- ma.h3k27ac[ma.h3k27ac$M_value>= -1 & ma.h3k27ac$M_value<= 1]
 
 
+##confident
+ma.k4me3.fs<-list.files(path = "/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3",pattern =".both.*?.xls",recursive = TRUE,full.names = TRUE)
+ma.k4me3 <- lapply(ma.k4me3.fs,readPeakFile)
+names(ma.k4me3)<-sapply(list.files(path = "/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3",pattern =".both.*?.xls",recursive = TRUE),function(x)strsplit(x,split = "[.]")[[1]][1])
+trimMA<- function(gr){
+  gr<- gr[gr$M_value<1 & gr$M_value>-1]
+  gr$score<- gr$summit
+  return(gr)
+}
+ma.k4me3<- lapply(ma.k4me3,trimMA)
+lapply(1:length(ma.k4me3),function(i)export.bedGraph(ma.k4me3[[i]],con = paste0("/mnt/local-disk1/rsgeno2/MAmotif/RACK7/routput/matrim/",names(ma.k4me3)[i],".trim.abs1.bed")))
+                
+                
+                
+                
 ##annotation
 ma.h3k4me1.anno <- annotatePeak(ma.h3k4me1, tssRegion=c(-2000, 2000), TxDb =txdb, annoDb="org.Hs.eg.db")
 ma.h3k4me1.anno<- as.GRanges(ma.h3k4me1.anno)
@@ -217,3 +232,21 @@ head(summary(bp), n=3)
 dotplot(ma.h3k4me1.enh.bp$H3K4me3, showCategory=20)
 ma.h3k4me1.pro.bp <- lapply(ma.h3k4me1.pro.lst,function(x)enrichGO(x$geneId, ont="BP", readable=TRUE))
 dotplot(ma.h3k4me1.pro.bp$H3K4me3, showCategory=20)
+
+
+############
+Tfbs<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/Track/wgEncodeRegTfbsClusteredV3.bed")
+Tfbs<- sort(Tfbs)
+Tfbs<- Tfbs[order(Tfbs$V4)]
+Tfbs.anno<- annotatePeak(Tfbs, tssRegion=c(-2000, 2000), TxDb =txdb, annoDb="org.Hs.eg.db")
+
+
+Tfbs.cell<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/Track/wgEncodeRegTfbsClusteredWithCellsV3.bed")
+Tfbs.cell <- sort(Tfbs.cell)
+Tfbs.cell <- Tfbs.cell[order(Tfbs.cell$V4)]
+
+Tfbs.K562 <- Tfbs.anno@anno[grep("K562",Tfbs.cell$V6)]
+
+
+Dnase.cluster<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/Track/wgEncodeRegDnaseClusteredV3.bed")
+
