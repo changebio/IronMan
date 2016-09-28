@@ -20,6 +20,8 @@ ggplot(k562.rpkm.rep1)+geom_point(aes(x=wgEncodeCaltechRnaSeqK562R1x75dAlignsRep
 require(GenomicAlignments)
 
 hmg<- genes(txdb,columns="gene_id")
+gene.df <- bitr(names(hmg), fromType = "ENTREZID", toType = c("SYMBOL"), annoDb = "org.Hs.eg.db")
+
 hmg<- hmg[gene.df$ENTREZID]
 hmg$symbol<- gene.df$SYMBOL
 hmg.pro<- promoters(hmg,upstream = 250,downstream = 250)
@@ -30,27 +32,50 @@ hmg.pro.bs<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hum
 
 hmg.pro.sum<- lapply(hmg.pro.bs,rowSums)
 hmg.pro.sum<- lapply(seq(1,length(hmg.pro.sum),by = 2),function(i,y)return(y[[i]]+y[[i+1]]),y=hmg.pro.sum)
-names(hmg.pro.sum)<- names(cage.seq)[seq(1,length(cage.seq),by=2)]
+names(hmg.pro.sum)<- names(hmg.pro.bs)[seq(1,length(hmg.pro.bs),by=2)]
 names(hmg.pro.sum)<- substring(names(hmg.pro.sum),first = 1,last = nchar(names(hmg.pro.sum))-6)
-cage.sum<- sapply(cage.seq,function(x)sum(x$V5))
-cage.sum<- sapply(seq(1,length(cage.sum),by = 2),function(i,y)return(y[[i]]+y[[i+1]]),y=cage.sum)
-hmg.pro.rpkm<- as.data.frame(sapply(1:13,function(i,x,y)return(x[[i]]*10^9/500/y[i]),x=hmg.pro.sum,y=cage.sum))
+
+hmg.pro.rpkm<- as.data.frame(sapply(hmg.pro.sum,function(x)return(x*10^9/500/sum(x))))
 colnames(hmg.pro.rpkm)<- names(hmg.pro.sum)
 ggplot(hmg.pro.rpkm)+geom_point(aes(x=K562_cell_rep1,y=K562_cell_rep2),alpha = 1/10)+
   scale_x_continuous(trans = "log2")+
   scale_y_continuous(trans = "log2")
 
-
-
 temp<- cbind(k562.rpkm.rep1,k562.rpkm.rep2[,3:4],hmg.pro.rpkm)
 temp<- na.omit(temp)
-saveRDS(temp,file = "data/CAGE_RNA_relationship.rds")
+#saveRDS(temp,file = "data/CAGE_RNA_relationship.rds")
+temp<- readRDS("data/CAGE_RNA_relationship.rds")
+heatmap(cor(temp[,3:23]),labCol = FALSE,main="The association between CAGE signal and RNA signal in genes")
+require(ggplot2)
+require(reshape2)
+
 ggplot(temp)+geom_point(aes(x=wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed,y=K562_cell_rep2),alpha = 1/10)+
   scale_x_continuous(trans = "log2")+
-  scale_y_continuous(trans = "log2")
+  scale_y_continuous(trans = "log2")+
+  labs(title="The association between RNA and CAGE") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
 
 
-gene.df <- bitr(names(hmg), fromType = "ENTREZID", toType = c("SYMBOL"), annoDb = "org.Hs.eg.db")
-gene.df
+#region.base.signal---------
+region.base.signal<- function(region,cage.seq,strand=TRUE,weight.col=NULL,...){
+  if(strand){
+    cage.sg.p<-lapply(cage.seq,function(x)ScoreMatrix(x,region[strand(region)=="+"],weight.col = weight.col))
+    cage.sg.m<-lapply(cage.seq,function(x)ScoreMatrix(x,region[strand(region)=="-"],weight.col = weight.col))
+    cage.sg<- list(plus=cage.sg.p,minus=cage.sg.m)
+    
+  }else{
+    cage.sg<-lapply(cage.seq,function(x)ScoreMatrix(x,region,weight.col = weight.col))
+    
+  }
+  return(cage.sg)
+}
 
 
