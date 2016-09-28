@@ -451,28 +451,43 @@ names(cage.gr.p)<- paste0(names(cage.gr.p),".plus")
 cage.gr<- c(cage.gr.m,cage.gr.p)
 cage.gr<- cage.gr[sort(names(cage.gr))]
 cage.gr<- lapply(cage.gr,function(x){names(mcols(x))<- "V5";return(x)})
-saveRDS(cage.gr,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/cage_gr.rds")
+#saveRDS(cage.gr,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/cage_gr.rds")
+cage.seq<- lapply(gro.gr,function(x)dropSeqlevels(x,c("chrY","chrM")))
+cage.seq<- lapply(cage.seq, function(x){seqlengths(x)<-seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
+
+gro.seq<- lapply(list.files("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",pattern = ".bed$")[1:6],function(x)readPeakFile(paste0("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",x)))
+names(gro.seq)<-list.files("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",pattern = ".bed$")[1:6]
+names(gro.seq)<- substring(names(gro.seq),first = 1,last = nchar(names(gro.seq))-9)
+gro.seq<- lapply(gro.seq,function(x)dropSeqlevels(x,c("chrY","chrM")))
+gro.seq<- lapply(gro.seq,function(x){seqlengths(x)<- seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
+
+###the process of all cage data in FANTOM
+all.gr.m<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/hg19.ctss_all_minus_pool.bed")
+mcols(all.gr.m)<- all.gr.m$score
+names(mcols(all.gr.m))<- "V5"
+#saveRDS(all.gr.m,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_minus_pool.rds")
+all.gr.p<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/hg19.ctss_all_plus_pool.bed")
+mcols(all.gr.p)<- all.gr.p$score
+names(mcols(all.gr.p))<- "V5"
+#saveRDS(all.gr.p,file="/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_plus_pool.rds")
+all.seq<- list(all.gr.m,all.gr.p)
+names(all.seq)<- c("hg19.ctss_all_minus","hg19.ctss_all_plus")
+all.seq<- lapply(all.seq,function(x)dropSeqlevels(x,c("chrY","chrM")))
+all.seq<- lapply(all.seq,function(x){seqlengths(x)<- seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
+
+gro.cage.seq<- c(cage.seq,gro.seq,all.seq)
+saveRDS(gro.cage.seq,file="/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/gro.cage.all.seq.rds")
 
 ###the process of dealing with CAGE bigWig from ENCODE
 cage.bw.files<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/CAGE",pattern = ".bigWig",full.names = TRUE)
 cage.bw<- lapply(cage.bw.files,import.bw)
 cage.bw[1:4]<- lapply(cage.bw[1:4],function(x){strand(x)<-"+";return(x)})
 cage.bw[5:8]<- lapply(cage.bw[5:8],function(x){strand(x)<-"-";return(x)})
-names(cage.bw)<- paste0(c("562CellClustersRep1","562CellClustersRep2","562CellSignalRep1","562CellSignalRep2"),c(rep(".minus",4),rep(".plus",4)))
+names(cage.bw)<- paste0(c("K562CellClustersRep1","562CellClustersRep2","562CellSignalRep1","562CellSignalRep2"),c(rep(".minus",4),rep(".plus",4)))
 cage.bw<- cage.bw[sort(names(cage.bw))]
 cage.bw<- lapply(cage.bw,function(x){names(mcols(x))<- "V5";return(x)})
 saveRDS(cage.bw,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/cage_bw.rds")
 
-
-###the process of all cage data in FANTOM
-all.gr.m<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/hg19.ctss_all_minus_pool.bed")
-mcols(all.gr.m)<- all.gr.m$score
-names(mcols(all.gr.m))<- "V5"
-saveRDS(all.gr.m,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_minus_pool.rds")
-all.gr.p<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/hg19.ctss_all_plus_pool.bed")
-mcols(all.gr.p)<- all.gr.p$score
-names(mcols(all.gr.p))<- "V5"
-saveRDS(all.gr.p,file="/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_plus_pool.rds")
 
 ##some commands
 file.remove(list.files(pattern = "VennDiagram*"))
