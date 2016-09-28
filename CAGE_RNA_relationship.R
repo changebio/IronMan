@@ -4,6 +4,10 @@ rownames(k562.rpkm.rep1)<- k562.rpkm.rep1$Gene.Symbol
 k562.rpkm.rep1<- k562.rpkm.rep1[hmg.pro$symbol,]
 
 k562.rpkm.rep2<- read.table("/mnt/local-disk1/rsgeno2/MAmotif/2.Processing/5.RNAseq_hg19_DEseq/rpkms/K562_2x75_rpkms.txt",header = TRUE)
+k562.rpkm.rep2<- k562.rpkm.rep2[!duplicated(k562.rpkm.rep2$Gene.Symbol),]
+rownames(k562.rpkm.rep2)<- k562.rpkm.rep2$Gene.Symbol
+k562.rpkm.rep2<- k562.rpkm.rep2[hmg.pro$symbol,]
+
 cor(k562.rpkm.rep1$wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed,k562.rpkm.rep1$wgEncodeCaltechRnaSeqK562R1x75dAlignsRep2V2.bed)
 plot(k562.rpkm.rep1$wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed,k562.rpkm.rep1$wgEncodeCaltechRnaSeqK562R1x75dAlignsRep2V2.bed)
 
@@ -20,7 +24,10 @@ hmg<- hmg[gene.df$ENTREZID]
 hmg$symbol<- gene.df$SYMBOL
 hmg.pro<- promoters(hmg,upstream = 250,downstream = 250)
 hmg.pro<- keepSeqlevels(hmg.pro,seqlevels(cage.seq$K562_cell_rep1.minus))
-hmg.pro.bs<- region.base.signal(hmg.pro,cage.seq,strand = FALSE,weight.col = "V5")
+hmg.pro.bs<- region.base.signal(hmg.pro,gro.cage.seq,strand = FALSE,weight.col = "V5")
+#saveRDS(hmg.pro.bs,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/human_Promoter_cage_bsignl.rds")
+hmg.pro.bs<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/human_Promoter_cage_bsignl.rds")
+
 hmg.pro.sum<- lapply(hmg.pro.bs,rowSums)
 hmg.pro.sum<- lapply(seq(1,length(hmg.pro.sum),by = 2),function(i,y)return(y[[i]]+y[[i+1]]),y=hmg.pro.sum)
 names(hmg.pro.sum)<- names(cage.seq)[seq(1,length(cage.seq),by=2)]
@@ -34,10 +41,10 @@ ggplot(hmg.pro.rpkm)+geom_point(aes(x=K562_cell_rep1,y=K562_cell_rep2),alpha = 1
   scale_y_continuous(trans = "log2")
 
 
-ind<-seqnames(hmg.pro)!="chrY" & !is.na(k562.rpkm.rep1$Gene.Symbol)
 
-temp<- cbind(k562.rpkm.rep1,hmg.pro.rpkm)
+temp<- cbind(k562.rpkm.rep1,k562.rpkm.rep2[,3:4],hmg.pro.rpkm)
 temp<- na.omit(temp)
+saveRDS(temp,file = "data/CAGE_RNA_relationship.rds")
 ggplot(temp)+geom_point(aes(x=wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed,y=K562_cell_rep2),alpha = 1/10)+
   scale_x_continuous(trans = "log2")+
   scale_y_continuous(trans = "log2")
