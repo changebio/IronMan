@@ -68,12 +68,16 @@ ggplot(pd.m, aes(Sample,variable) ) +
         strip.text.x = element_text(face = "bold",size = 16)
   )
 
+
+###RNA production as measured by CAGE tag density at TSSs in K562 cells-----------
 require(ggplot2)
 require(reshape2)
 
-ggplot(temp)+geom_point(aes(x=wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed,y=K562_cell_rep2),alpha = 1/10)+
+temp.gd<-melt(temp,id.vars = c("Transcipt.ID","Gene.Symbol","wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed"))
+ggplot(temp.gd)+geom_point(aes(x=wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed,y=value),alpha = 1/10)+
   scale_x_continuous(trans = "log2")+
   scale_y_continuous(trans = "log2")+
+  facet_wrap( ~ variable)+
   labs(title="The association between RNA and CAGE") +
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
         axis.title.x = element_text( face="bold",size=14),
