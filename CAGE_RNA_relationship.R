@@ -45,7 +45,29 @@ temp<- cbind(k562.rpkm.rep1,k562.rpkm.rep2[,3:4],hmg.pro.rpkm)
 temp<- na.omit(temp)
 #saveRDS(temp,file = "data/CAGE_RNA_relationship.rds")
 temp<- readRDS("data/CAGE_RNA_relationship.rds")
-heatmap(cor(temp[,3:23]),labCol = FALSE,main="The association between CAGE signal and RNA signal in genes")
+##heatmap of the association between CAGE and RNA
+#heatmap(cor(temp[,3:23]),labCol = FALSE,main="The association between CAGE signal and RNA signal in genes")
+data <- cor(temp[,3:23])
+ord <- hclust( dist(data, method = "euclidean"), method = "ward.D" )$order
+ord
+pd <- as.data.frame( data[ord,ord] )
+pd$Sample<- rownames
+pd.m<- melt(pd)
+pd.m$Sample<- factor(pd.m$Sample,levels = rownames(pd))
+pd.m$variable<- factor(pd.m$variable,levels = rownames(pd))
+ggplot(pd.m, aes(Sample,variable) ) +
+  geom_tile(aes(fill = value))+
+  labs(x="",y="",title="The association between RNA and CAGE") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "white"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
+
 require(ggplot2)
 require(reshape2)
 
