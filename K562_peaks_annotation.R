@@ -172,5 +172,29 @@ ggplot(melt(k562.5h.gd[,c(13:19)]))+geom_histogram(aes(x=value,y=..density..,fil
         strip.text.x = element_text(face = "bold",size = 16)
   )
 
+##The RPKM of CAGE
+k562.5h.rpkm<- as.data.frame(sapply(k562.5h.sum,function(x)return(x*10^9/500/sum(x))))
+colnames(k562.5h.rpkm)<- names(k562.5h.sum)
+k562.5h.rpkm$State<- k562.pk.dnase.5h$State
+k562.5h.rpkm$State<- factor(k562.5h.rpkm$State,levels = c("None","H3K4me1","H3K27ac","Both","Control","Enhancer","poiProm","actProm"))
+k562.5h.rpkm$Type<- "H3K4me3"
+k562.5h.rpkm$Type[k562.5h.rpkm$State=="Control"]<- "Other"
+k562.5h.rpkm$Type[k562.5h.rpkm$State=="Enhancer"]<- "Other"
+k562.5h.rpkm$Type[k562.5h.rpkm$State=="poiProm"]<- "Promoter"
+k562.5h.rpkm$Type[k562.5h.rpkm$State=="actProm"]<- "Promoter"
+k562.5h.rpkm$normGro<- k562.5h.rpkm$GSM1480321_K562_GROcap_wTAP - k562.5h.rpkm$GSM1480322_K562_GROcap_noTAP
+ggplot(melt(k562.5h.rpkm[,c(14:20)]))+geom_histogram(aes(x=value,y=..density..,fill=Type))+
+  facet_grid(variable ~ State)+
+  scale_x_continuous(trans = "log2")+
+  labs(x="rpkm",title="The distribution of CAGE signal",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14,angle = 90),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
 
 
