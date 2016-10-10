@@ -250,3 +250,111 @@ Tfbs.K562 <- Tfbs.anno@anno[grep("K562",Tfbs.cell$V6)]
 
 Dnase.cluster<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/Track/wgEncodeRegDnaseClusteredV3.bed")
 
+
+## Dscore of non-promoter H3K4me3
+
+names(gro.seq)<- substring(names(gro.seq),first = 1,last = nchar(names(gro.seq))-9)
+gro.cage.seq<- c(gro.seq,cage.seq)
+
+
+dnase.K562.NB.gp<- region.cage.Dscore(dnase.K562.NB,cage.seq[1:4])
+
+
+ggplot(dnase.K562.NB.gp)+geom_histogram(aes(x=value,y=..count..))+
+  facet_wrap( ~ variable)+
+  labs(x = "",y = " ",title="Histogram of D score of non-promoter peaks in K562") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size=16)
+  )
+
+########
+
+cage.seq.ds<- lapply(dnase.K562.anno.sl,function(x)region.cage.Dscore(x,cage.seq = cage.seq))
+saveRDS(cage.seq.ds,file = "CAGE_seq_ds.rds")
+gro.seq.ds<- lapply(dnase.K562.anno.sl,function(x)region.cage.Dscore(x,cage.seq = gro.seq))
+saveRDS(gro.seq.ds,file = "GRO_seq_ds.rds")
+all.seq.ds<- lapply(dnase.K562.anno.sl,function(x)region.cage.Dscore(x,cage.seq = list(all.gr.m,all.gr.p)))
+saveRDS(all.seq.ds,file = "ALL_seq_ds.rds")
+
+a<- Reduce(rbind,all.seq.ds)
+a$group<- rep(names(all.seq.ds),as.numeric(sapply(all.seq.ds,nrow)))
+
+ggplot(a)+geom_histogram(aes(x=value,y=..count..))+
+  facet_wrap( ~ group)+
+  labs(x = "",y = " ",title="Histogram of D score of Dnase groups in K562") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size=8)
+  )
+
+
+###
+all.gr.m<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_minus_pool.rds")
+all.gr.p<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_plus_pool.rds")
+dnase.K562.NB.all.gs<-lapply(list(all.gr.m,all.gr.p),function(x)ScoreMatrixBin(x,dnase.K562.NB,bin.num = 50,weight.col = "V5"))
+
+all.sg<- melt(sapply(dnase.K562.NB.all.gs,colMeans))
+all.sg$gene<- rep("*",50)
+all.sg$read<- c(rep("minus",50),rep("plus",50))
+all.sg$Var1<- c(-24.5:24.5)*10
+
+ggplot(all.sg)+geom_line(data=all.sg,aes(x=Var1,y=value,linetype=as.factor(read)))+
+  labs(x = "",y = " ",title="The average signal of non-promoter peaks",linetype="read") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
+
+dnase.K562.NB.all.ds<- Dscore(all.gr.p,all.gr.m,dnase.K562.NB,wt="V5")
+ggplot(as.data.frame(dnase.K562.NB.all.ds))+geom_freqpoly(aes(x=Dscore,y=..count..))+
+  labs(x = "",y = " ",title="Histogram of D score of non-promoter peaks by merged CAGE") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size=16)
+  )
+
+dnase.K562.NB.all.ds<- Dscore(all.gr.p,all.gr.m,ucsc.gene.pt,wt="V5")
+ggplot(as.data.frame(dnase.K562.NB.all.ds))+geom_histogram(aes(x=Dscore,y=..count..))+
+  labs(x = "",y = " ",title="Histogram of D score of promoters by merged CAGE") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size=16)
+  )
+
+
+###Dnase overlap
+macs.dnase.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/DNase/",pattern = "bed")
+macs.dnase<- lapply(macs.dnase.f,function(x)import.bed(paste0("/mnt/local-disk1/rsgeno2/MAmotif/DNase/",x)))
+names(macs.dnase)<- macs.dnase.f
+sapply(macs.dnase,function(x)table(countOverlaps(dnase.K562,x)))
+enc.dnase.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/",pattern = "bed")[1:4]
+enc.dnase<- lapply(enc.dnase.f,function(x)import.bed(paste0("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/",x)))
+names(enc.dnase)<- enc.dnase.f
+sapply(enc.dnase, function(x)table(countOverlaps(dnase.K562,x)))
+
