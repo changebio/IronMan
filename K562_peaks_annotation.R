@@ -48,7 +48,8 @@ mcols(dnase.me3)<- mcols(ma.h3k4me3.anno[dnase.me3$qurey])
 dnase.me3$State[dnase.me3$Promoter]<- "actProm"
 
 ###annotate non-promoter enhancer
-enh.k562<- reduce(c(ma.h3k4me1[,1],ma.h3k27ac[,1]))
+enh.k562<- ma.h3k27ac[,0]
+enh.k562<- enh.k562[countOverlaps(enh.k562,ma.h3k4me1)>0]
 enh.k562<- enh.k562[countOverlaps(enh.k562,ma.h3k4me3)==0]
 enh.k562<- enh.k562[countOverlaps(enh.k562,h3k27me3)==0]
 enh.k562.anno <- annotatePeak(enh.k562, tssRegion=c(-2000, 2000), TxDb =txdb, annoDb="org.Hs.eg.db")
@@ -113,17 +114,25 @@ ctl.k562.anno<- sort(ctl.k562.anno,by = ~ signalValue)[1:5000]
 ctl.k562.anno$State<- "Control"
 
 
-
-
 k562.pk.dnase<- c(dnase.me3[,c(1:12,17)],dnase.enh[,c(1:12,15)],dnase.pos[,c(2:13,16)],ctl.k562.anno[,c(7:18,21)])
 k562.pk.dnase<- sort(k562.pk.dnase)
 k562.pk.dnase<- sort(k562.pk.dnase,by = ~ State)
+table(k562.pk.dnase$State)
+#actProm     Both  Control Enhancer  H3K27ac  H3K4me1     None  poiProm 
+#11268     3033     5000     2832      367     1382      907     4509 
 #saveRDS(k562.pk.dnase,file = "data/K562_annotated_dnase_peaks.rds")
+##K562 annotated peaks
+k562.pk<- reduce(c(ma.h3k4me3.anno[,0],enh.k562.anno[,0],pos.k562.anno[,0],resize(ctl.k562.anno[,0],width = 1000,fix = "center")))
+k562.pk<- keepSeqlevels(k562.pk,seqlevels(txdb)[1:23])
+strand(k562.pk)<-"*"
+k562.pk<- sort(k562.pk)
+export.bed(k562.pk,con="/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/K562_annotated_peaks.bed")
+
 
 
 #Cage signal in K562 annotated peaks-----------
 cage.seq<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/gro.cage.all.seq.rds")
-k562.pk.dnase.5h<- resize(k562.pk.dnase,width = 500,fix="center")
+k562.pk.dnase.5h<- resize(k562.pk.dnase,width = 1000,fix="center")
 k562.pk.dnase.5h<- k562.pk.dnase.5h[countOverlaps(k562.pk.dnase.5h,k562.pk.dnase.5h)==1]
 k562.pk.dnase.5h<- keepSeqlevels(k562.pk.dnase.5h,seqlevels(cage.seq$K562_cell_rep1.minus))
 k562.5h.bs<- region.base.signal(k562.pk.dnase.5h,cage.seq,strand = FALSE,weight.col = "V5")
@@ -197,4 +206,9 @@ ggplot(melt(k562.5h.rpkm[,c(14:20)]))+geom_histogram(aes(x=value,y=..density..,f
         strip.text.x = element_text(face = "bold",size = 16)
   )
 
+##Profiles of the average CAGE signal
+a<-aggregate(k562.5h.bs$K562_cell_rep1.minus,list(k562.5h.gd$State),sum)
+rownames(a)<- a$Group.1
+a<- a[,-1]
+aa<- sapply(seq(1,500,by=25),function(i)rowSums(a[,i:(i+24)]))
 
