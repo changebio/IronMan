@@ -54,5 +54,15 @@ ggplot(melt(k562.pk.gexp.dep[,c(3:6,24)]))+
   facet_wrap(~variable)+
   hy.theme
 
+###choose K562-distal only H3K4me3 region
+k562.ds.me3.exp<- k562.pk.gexp.dep[k562.pk.gexp.dep$State=="None",]
+k562.ds.me3.exp.s<- as.data.frame(sapply(3:6, function(i)summary(k562.ds.me3.exp[,i])))
+high.exp.idx<- rowSums(as.matrix(k562.ds.me3.exp[,3:6]>t(replicate(318,as.numeric(k562.ds.me3.exp.s[3,])))))
+k562.ds.me3.exp.high<- k562.ds.me3.exp[high.exp.idx==4,]
 
-
+k562.bp.me3<- readBroadPeak("/mnt/local-disk1/rsgeno2/MAmotif/macs2/broad_test_peaks.broadPeak")[1:20000]
+k562.np.me3<- readNarrowPeak("/mnt/local-disk1/rsgeno2/MAmotif/macs2/narrow_test_peaks.narrowPeak")[1:20000]
+k562.ds.me3.only<- k562.pk.dnase[k562.ds.me3.exp.high$Index]
+k562.ds.me3.only$BP<- countOverlaps(k562.ds.me3.only,k562.bp.me3)
+k562.ds.me3.only$NP<- countOverlaps(k562.ds.me3.only,k562.np.me3)
+saveRDS(k562.ds.me3.only,file = "data/K562_only_H3K4me3_peaks.rds")
