@@ -66,3 +66,57 @@ k562.ds.me3.only<- k562.pk.dnase[k562.ds.me3.exp.high$Index]
 k562.ds.me3.only$BP<- countOverlaps(k562.ds.me3.only,k562.bp.me3)
 k562.ds.me3.only$NP<- countOverlaps(k562.ds.me3.only,k562.np.me3)
 saveRDS(k562.ds.me3.only,file = "data/K562_only_H3K4me3_peaks.rds")
+
+
+#Cage signal in K562 annotated peaks-----------
+cage.seq<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/gro.cage.all.seq.rds")
+k562.pk.dnase.1k<- resize(k562.pk.dnase,width = 1000,fix="center")
+k562.pk.dnase.1k<- k562.pk.dnase.1k[countOverlaps(k562.pk.dnase.1k,k562.pk.dnase.1k)==1]
+k562.pk.dnase.1k<- keepSeqlevels(k562.pk.dnase.1k,seqlevels(cage.seq$K562_cell_rep1.minus))
+k562.1k.bs<- region.base.signal(k562.pk.dnase.1k,cage.seq,strand = FALSE,weight.col = "V5")
+#saveRDS(k562.1k.bs,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/K562_annotated_peaks_1kp_cage_signal.rds")
+
+##The distribution of CAGE reads in K562----------
+k562.5h.bs<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/K562_annotated_peaks_1kp_cage_signal.rds")
+k562.5h.sum<- lapply(k562.5h.bs,rowSums)
+k562.5h.sum<- lapply(seq(1,length(k562.5h.sum),by = 2),function(i,y)return(y[[i]]+y[[i+1]]),y=k562.5h.sum)
+names(k562.5h.sum)<- names(k562.5h.bs)[seq(1,length(k562.5h.bs),by=2)]
+names(k562.5h.sum)<- substring(names(k562.5h.sum),first = 1,last = nchar(names(k562.5h.sum))-6)
+
+k562.5h.gd<- as.data.frame(sapply(k562.5h.sum,function(x)return(x)))
+colnames(k562.5h.gd)<- names(k562.5h.sum)
+k562.5h.gd[k562.5h.gd>30]<-30
+k562.5h.gd$State<- k562.pk.dnase.5h$State
+k562.5h.gd$State<- factor(k562.5h.gd$State,levels = c("None","H3K4me1","H3K27ac","Both","Control","Enhancer","poiProm","actProm"))
+k562.5h.gd$Type<- "H3K4me3"
+k562.5h.gd$Type[k562.5h.gd$State=="Control"]<- "Other"
+k562.5h.gd$Type[k562.5h.gd$State=="Enhancer"]<- "Other"
+k562.5h.gd$Type[k562.5h.gd$State=="poiProm"]<- "Promoter"
+k562.5h.gd$Type[k562.5h.gd$State=="actProm"]<- "Promoter"
+
+ggplot(melt(k562.5h.gd[,c(12:19)]))+geom_histogram(aes(x=value,fill=Type))+
+  facet_grid(variable ~ State)+
+  labs(x="read",title="The distribution of CAGE signal",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
+
+ggplot(melt(k562.5h.gd[,c(13:19)]))+geom_histogram(aes(x=value,y=..density..,fill=Type))+
+  facet_grid(variable ~ State)+
+  labs(x="read",y="density",title="The distribution of CAGE signal",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
+

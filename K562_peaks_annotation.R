@@ -120,6 +120,7 @@ k562.pk.dnase<- sort(k562.pk.dnase,by = ~ State)
 table(k562.pk.dnase$State)
 #actProm     Both  Control Enhancer  H3K27ac  H3K4me1     None  poiProm 
 #11268     3033     5000     2832      367     1382      907     4509 
+boxplot(abs(k562.pk.dnase$distanceToTSS)~k562.pk.dnase$State,outline=FALSE,main="Distance to TSS")
 #saveRDS(k562.pk.dnase,file = "data/K562_annotated_dnase_peaks.rds")
 ##K562 annotated peaks
 k562.pk<- reduce(c(ma.h3k4me3.anno[,0],enh.k562.anno[,0],pos.k562.anno[,0],resize(ctl.k562.anno[,0],width = 1000,fix = "center")))
@@ -129,86 +130,4 @@ k562.pk<- sort(k562.pk)
 export.bed(k562.pk,con="/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/K562_annotated_peaks.bed")
 
 
-
-#Cage signal in K562 annotated peaks-----------
-cage.seq<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/gro.cage.all.seq.rds")
-k562.pk.dnase.5h<- resize(k562.pk.dnase,width = 1000,fix="center")
-k562.pk.dnase.5h<- k562.pk.dnase.5h[countOverlaps(k562.pk.dnase.5h,k562.pk.dnase.5h)==1]
-k562.pk.dnase.5h<- keepSeqlevels(k562.pk.dnase.5h,seqlevels(cage.seq$K562_cell_rep1.minus))
-k562.5h.bs<- region.base.signal(k562.pk.dnase.5h,cage.seq,strand = FALSE,weight.col = "V5")
-#saveRDS(k562.5h.bs,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/K562_annotated_peaks_500bp_cage_signal.rds")
-
-##The distribution of CAGE reads in K562----------
-k562.5h.sum<- lapply(k562.5h.bs,rowSums)
-k562.5h.sum<- lapply(seq(1,length(k562.5h.sum),by = 2),function(i,y)return(y[[i]]+y[[i+1]]),y=k562.5h.sum)
-names(k562.5h.sum)<- names(k562.5h.bs)[seq(1,length(k562.5h.bs),by=2)]
-names(k562.5h.sum)<- substring(names(k562.5h.sum),first = 1,last = nchar(names(k562.5h.sum))-6)
-
-k562.5h.gd<- as.data.frame(sapply(k562.5h.sum,function(x)return(x)))
-colnames(k562.5h.gd)<- names(k562.5h.sum)
-k562.5h.gd[k562.5h.gd>30]<-30
-k562.5h.gd$State<- k562.pk.dnase.5h$State
-k562.5h.gd$State<- factor(k562.5h.gd$State,levels = c("None","H3K4me1","H3K27ac","Both","Control","Enhancer","poiProm","actProm"))
-k562.5h.gd$Type<- "H3K4me3"
-k562.5h.gd$Type[k562.5h.gd$State=="Control"]<- "Other"
-k562.5h.gd$Type[k562.5h.gd$State=="Enhancer"]<- "Other"
-k562.5h.gd$Type[k562.5h.gd$State=="poiProm"]<- "Promoter"
-k562.5h.gd$Type[k562.5h.gd$State=="actProm"]<- "Promoter"
-
-ggplot(melt(k562.5h.gd[,c(12:19)]))+geom_histogram(aes(x=value,fill=Type))+
-  facet_grid(variable ~ State)+
-  labs(x="read",title="The distribution of CAGE signal",fill="") +
-  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
-        axis.title.x = element_text( face="bold",size=14),
-        axis.title.y = element_text(color="black", size=14, face="bold"),
-        legend.title =element_text(face = "bold", size = 14, color = "black"),
-        legend.text = element_text(face = "bold", size = 12),
-        axis.text.x = element_text(face="bold",size=14),
-        axis.text.y = element_text(face="bold", size=14),
-        strip.text.x = element_text(face = "bold",size = 16)
-  )
-
-ggplot(melt(k562.5h.gd[,c(13:19)]))+geom_histogram(aes(x=value,y=..density..,fill=Type))+
-  facet_grid(variable ~ State)+
-  labs(x="read",y="density",title="The distribution of CAGE signal",fill="") +
-  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
-        axis.title.x = element_text( face="bold",size=14),
-        axis.title.y = element_text(color="black", size=14, face="bold"),
-        legend.title =element_text(face = "bold", size = 14, color = "black"),
-        legend.text = element_text(face = "bold", size = 12),
-        axis.text.x = element_text(face="bold",size=14),
-        axis.text.y = element_text(face="bold", size=14),
-        strip.text.x = element_text(face = "bold",size = 16)
-  )
-
-##The RPKM of CAGE
-k562.5h.rpkm<- as.data.frame(sapply(k562.5h.sum,function(x)return(x*10^9/500/sum(x))))
-colnames(k562.5h.rpkm)<- names(k562.5h.sum)
-k562.5h.rpkm$State<- k562.pk.dnase.5h$State
-k562.5h.rpkm$State<- factor(k562.5h.rpkm$State,levels = c("None","H3K4me1","H3K27ac","Both","Control","Enhancer","poiProm","actProm"))
-k562.5h.rpkm$Type<- "H3K4me3"
-k562.5h.rpkm$Type[k562.5h.rpkm$State=="Control"]<- "Other"
-k562.5h.rpkm$Type[k562.5h.rpkm$State=="Enhancer"]<- "Other"
-k562.5h.rpkm$Type[k562.5h.rpkm$State=="poiProm"]<- "Promoter"
-k562.5h.rpkm$Type[k562.5h.rpkm$State=="actProm"]<- "Promoter"
-k562.5h.rpkm$normGro<- k562.5h.rpkm$GSM1480321_K562_GROcap_wTAP - k562.5h.rpkm$GSM1480322_K562_GROcap_noTAP
-ggplot(melt(k562.5h.rpkm[,c(14:20)]))+geom_histogram(aes(x=value,y=..density..,fill=Type))+
-  facet_grid(variable ~ State)+
-  scale_x_continuous(trans = "log2")+
-  labs(x="rpkm",title="The distribution of CAGE signal",fill="") +
-  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
-        axis.title.x = element_text( face="bold",size=14),
-        axis.title.y = element_text(color="black", size=14, face="bold"),
-        legend.title =element_text(face = "bold", size = 14, color = "black"),
-        legend.text = element_text(face = "bold", size = 12),
-        axis.text.x = element_text(face="bold",size=14,angle = 90),
-        axis.text.y = element_text(face="bold", size=14),
-        strip.text.x = element_text(face = "bold",size = 16)
-  )
-
-##Profiles of the average CAGE signal
-a<-aggregate(k562.5h.bs$K562_cell_rep1.minus,list(k562.5h.gd$State),sum)
-rownames(a)<- a$Group.1
-a<- a[,-1]
-aa<- sapply(seq(1,500,by=25),function(i)rowSums(a[,i:(i+24)]))
 
