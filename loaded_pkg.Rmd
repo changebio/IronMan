@@ -1,0 +1,28 @@
+---
+title: "loaded_pkg"
+author: "hy"
+date: "10/13/2016"
+output: html_document
+---
+
+These packages need to be loaded in Iranman project
+
+```{r, bioinformatic packages}
+require(rtracklayer)
+require(TxDb.Hsapiens.UCSC.hg19.knownGene)
+require(BSgenome.Hsapiens.UCSC.hg19)
+require(GenomicRanges)
+require(GenomicFeatures)
+require(genomation)
+require(ChIPseeker)
+```
+
+
+
+```{r, plot packages}
+require(ggplot2)
+require(reshape2)
+```
+
+
+
