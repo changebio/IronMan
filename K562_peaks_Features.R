@@ -66,10 +66,12 @@ k562.ds.me3.only<- k562.pk.dnase[k562.ds.me3.exp.high$Index]
 k562.ds.me3.only$BP<- countOverlaps(k562.ds.me3.only,k562.bp.me3)
 k562.ds.me3.only$NP<- countOverlaps(k562.ds.me3.only,k562.np.me3)
 saveRDS(k562.ds.me3.only,file = "data/K562_only_H3K4me3_peaks.rds")
-
+k562.bp.me3.sub<- subsetByOverlaps(k562.bp.me3,k562.ds.me3.only)
 
 #Cage signal in K562 annotated peaks-----------
 cage.seq<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/gro.cage.all.seq.rds")
+cage.seq.dp<- sapply(cage.seq,function(x)sum(x$V5))
+#saveRDS(cage.seq.dp,file = "data/Cage_seq_deep.rds")
 k562.pk.dnase.1k<- resize(k562.pk.dnase,width = 1000,fix="center")
 k562.pk.dnase.1k<- k562.pk.dnase.1k[countOverlaps(k562.pk.dnase.1k,k562.pk.dnase.1k)==1]
 k562.pk.dnase.1k<- keepSeqlevels(k562.pk.dnase.1k,seqlevels(cage.seq$K562_cell_rep1.minus))
@@ -120,3 +122,72 @@ ggplot(melt(k562.5h.gd[,c(13:19)]))+geom_histogram(aes(x=value,y=..density..,fil
         strip.text.x = element_text(face = "bold",size = 16)
   )
 
+#Dscore
+Dsuper<- function(base.sg,width){
+  cage.rd.sum<- lapply(base.sg,function(x)rowSums(x[,(ncol(x)/2-width/2+1):(ncol(x)/2+width/2)]))
+  cage.rd.sum<- lapply(seq(1,length(cage.rd.sum),by = 2),function(i,y)return((y[[i+1]]-y[[i]])/(y[[i]]+y[[i+1]])),y=cage.rd.sum)
+  names(cage.rd.sum)<- names(base.sg)[seq(1,length(base.sg),by=2)]
+  names(cage.rd.sum)<- substring(names(cage.rd.sum),first = 1,last = nchar(names(cage.rd.sum))-6)
+  
+  cage.rd.gd<- as.data.frame(sapply(cage.rd.sum,function(x)return(x)))
+  colnames(cage.rd.gd)<- names(cage.rd.sum)
+  cage.rd.gd$State<- k562.pk.dnase.5h$State
+  cage.rd.gd$State<- factor(cage.rd.gd$State,levels = c("None","H3K4me1","H3K27ac","Both","Control","Enhancer","poiProm","actProm"))
+  cage.rd.gd$Type<- "H3K4me3"
+  cage.rd.gd$Type[cage.rd.gd$State=="Control"]<- "Other"
+  cage.rd.gd$Type[cage.rd.gd$State=="Enhancer"]<- "Other"
+  cage.rd.gd$Type[cage.rd.gd$State=="poiProm"]<- "Promoter"
+  cage.rd.gd$Type[cage.rd.gd$State=="actProm"]<- "Promoter"
+  return(cage.rd.gd)
+}
+cage.rd.gd<- Dsuper(k562.5h.bs,width = 100)
+ggplot(melt(cage.rd.gd[,c(1,17:19)]))+geom_histogram(aes(x=value,y = ..density..,fill=Type))+
+  facet_grid(variable ~ State)+
+  labs(x="read",title="The distribution of D score(100bp)",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
+
+Dscore<- function(base.sg,width){
+  cage.rd.sum<- lapply(1:length(base.sg),function(i,y){x=y[[i]];if(i%%2){
+    return(rowSums(x[,(ncol(x)/2-width/2+1):(ncol(x)/2)]))
+    }else{
+        return(rowSums(x[,(ncol(x)/2):(ncol(x)/2+width/2)]))}},y=base.sg)
+  cage.rd.sum<- lapply(seq(1,length(cage.rd.sum),by = 2),function(i,y)return((y[[i+1]]-y[[i]])/(y[[i]]+y[[i+1]])),y=cage.rd.sum)
+  names(cage.rd.sum)<- names(base.sg)[seq(1,length(base.sg),by=2)]
+  names(cage.rd.sum)<- substring(names(cage.rd.sum),first = 1,last = nchar(names(cage.rd.sum))-6)
+  
+  cage.rd.gd<- as.data.frame(sapply(cage.rd.sum,function(x)return(x)))
+  colnames(cage.rd.gd)<- names(cage.rd.sum)
+  cage.rd.gd$State<- k562.pk.dnase.5h$State
+  cage.rd.gd$State<- factor(cage.rd.gd$State,levels = c("None","H3K4me1","H3K27ac","Both","Control","Enhancer","poiProm","actProm"))
+  cage.rd.gd$Type<- "H3K4me3"
+  cage.rd.gd$Type[cage.rd.gd$State=="Control"]<- "Other"
+  cage.rd.gd$Type[cage.rd.gd$State=="Enhancer"]<- "Other"
+  cage.rd.gd$Type[cage.rd.gd$State=="poiProm"]<- "Promoter"
+  cage.rd.gd$Type[cage.rd.gd$State=="actProm"]<- "Promoter"
+  return(cage.rd.gd)
+}
+cage.sc.gd<- Dscore(k562.5h.bs,width = 400)
+ggplot(melt(cage.sc.gd[,c(1,17:19)]))+geom_histogram(aes(x=value,y = ..density..,fill=Type))+
+  facet_grid(variable ~ State)+
+  labs(x="read",title="The distribution of normal D score(400bp)",fill="") +
+  theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+        axis.title.x = element_text( face="bold",size=14),
+        axis.title.y = element_text(color="black", size=14, face="bold"),
+        legend.title =element_text(face = "bold", size = 14, color = "black"),
+        legend.text = element_text(face = "bold", size = 12),
+        axis.text.x = element_text(face="bold",size=14),
+        axis.text.y = element_text(face="bold", size=14),
+        strip.text.x = element_text(face = "bold",size = 16)
+  )
+##average signal
+
+cage.ave.sg<- lapply(1:length(k562.5h.bs),function(i)sapply(split(as.data.frame(k562.5h.bs[[i]]@.Data),k562.pk.dnase.1k$State),function(x)colMeans(x)*10^9/cage.seq.dp[i]))
+names(cage.ave.sg)<- names(k562.5h.bs)
