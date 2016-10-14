@@ -218,3 +218,23 @@ ggplot(melt(k562.me3.sg,id.var=c("strand","name")))+geom_line(aes(x=name,y=value
   facet_grid(variable~.,scales = "free")+
   labs(x = "",y = " ",title="The average of H3K4me3 signal in 1kp regions",linetype="read") +
   hy.theme
+
+#DNase
+k562.ase.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/",pattern = "bed")[3:4]
+k562.ase.bed<- lapply(k562.ase.f, function(x)import.bed(paste0("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/",x)))
+k562.ase.bed<- lapply(k562.ase.bed,function(x){seqlengths(x)<- seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
+names(k562.ase.bed)<- k562.ase.f
+k562.ase.cov<- lapply(k562.ase.bed,coverage)
+
+k562.ase.bs<- region.base.signal(k562.pk.dnase.1k,k562.ase.cov,strand=FALSE)
+ase.seq.dp<- lapply(k562.ase.bs,sum)
+ase.ave.sg<- lapply(1:length(k562.ase.bs),function(i)sapply(split(as.data.frame(k562.ase.bs[[i]]@.Data),k562.pk.dnase.1k$State),function(x)colMeans(x)*10^9/ase.seq.dp[[i]]))
+names(ase.ave.sg)<- k562.ase.f
+k562.ase.sg<- as.data.frame(rbind(ase.ave.sg$wgEncodeOpenChromDnaseK562AlnRep1.bed,ase.ave.sg$wgEncodeOpenChromDnaseK562AlnRep2.bed))
+k562.ase.sg$strand<- c(rep("Rep1",1000),rep("Rep2",1000))
+k562.ase.sg$name<- -500:499
+saveRDS(k562.ase.sg,file = "data/K562_ase_sg.rds")
+ggplot(melt(k562.ase.sg,id.var=c("strand","name")))+geom_line(aes(x=name,y=value,color=strand))+
+  facet_grid(variable~.,scales = "free")+
+  labs(x = "",y = " ",title="The average of DNase signal in 1kp regions") +
+  hy.theme
