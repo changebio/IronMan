@@ -4,21 +4,7 @@
 
 
 #================================================
-##packages
-require(ggplot2)
-require(reshape2)
 
-##classical theme
-hy.theme<-   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
-                   axis.title.x = element_text( face="bold",size=14,colour = "black"),
-                   axis.title.y = element_text(color="black", size=14, face="bold"),
-                   legend.title =element_text(face = "bold", size = 14, color = "white"),
-                   legend.text = element_text(face = "bold", size = 12),
-                   axis.text.x = element_text(face = "bold",size=14),
-                   axis.text.y = element_text(face="bold", size=14),
-                   strip.text.x = element_text(face = "bold",size = 16)
-)
-##
 k562.pk.dnase<- readRDS("data/K562_annotated_dnase_peaks.rds")
 k562.rpkm<- readRDS("data/CAGE_RNA_relationship.rds")
 table(k562.pk.dnase$SYMBOL %in% k562.rpkm$Gene.Symbol)
@@ -190,4 +176,45 @@ ggplot(melt(cage.sc.gd[,c(1,17:19)]))+geom_histogram(aes(x=value,y = ..density..
 ##average signal
 
 cage.ave.sg<- lapply(1:length(k562.5h.bs),function(i)sapply(split(as.data.frame(k562.5h.bs[[i]]@.Data),k562.pk.dnase.1k$State),function(x)colMeans(x)*10^9/cage.seq.dp[i]))
-names(cage.ave.sg)<- names(k562.5h.bs)
+k562.cage.sg<- as.data.frame(rbind(cage.ave.sg$hg19.ctss_all_plus,cage.ave.sg$hg19.ctss_all_minus))
+k562.cage.sg$strand<- c(rep("+",1000),rep("-",1000))
+k562.cage.sg$name<- -500:499
+
+ggplot(melt(k562.cage.sg,id.var=c("strand","name")))+geom_line(aes(x=name,y=value,color=strand))+
+  facet_grid(variable~.,scales = "free")+
+  labs(x = "",y = " ",title="The average of CAGE signal in 1kp regions",linetype="read") +
+  hy.theme
+
+##trimed
+cage.ave.tm<- lapply(1:length(k562.5h.bs),function(i)sapply(split(as.data.frame(k562.5h.bs[[i]]@.Data),k562.pk.dnase.1k$State),function(x)apply(x,2,mean,trim=.05)*10^9/cage.seq.dp[i]))
+names(cage.ave.tm)<- names(k562.5h.bs)
+k562.cage.tm<- as.data.frame(rbind(cage.ave.tm$hg19.ctss_all_plus,cage.ave.tm$hg19.ctss_all_minus))
+k562.cage.tm$strand<- c(rep("+",1000),rep("-",1000))
+k562.cage.tm$name<- -500:499
+
+ggplot(melt(k562.cage.tm,id.var=c("strand","name")))+geom_line(aes(x=name,y=value,color=strand))+
+  stat_smooth(method = "auto",level = 0.95)+
+  facet_grid(variable~.,scales = "free")+
+  labs(x = "",y = " ",title="The average of CAGE signal in 1kp regions",linetype="read") +
+  hy.theme
+
+
+##H3K4me3 
+k562.me3.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/3.Histone_Broad_hg19/H3K4me3/K562/")[2:3]
+k562.me3.bed<- lapply(k562.me3.f, function(x)import.bed(paste0("/mnt/local-disk1/rsgeno2/MAmotif/3.Histone_Broad_hg19/H3K4me3/K562/",x)))
+k562.me3.bed<- lapply(k562.me3.bed,function(x){seqlengths(x)<- seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
+names(k562.me3.bed)<- k562.me3.f
+k562.me3.cov<- lapply(k562.me3.bed,function(x)coverage(x,ifelse(strand(x)=="+",115,-115)))
+me3.seq.dp<- lapply(k562.me3.cov,function(x)sum(sum(x)))
+k562.me3.bs<- region.base.signal(k562.pk.dnase.1k,k562.me3.cov,strand=FALSE)
+me3.seq.dp<- lapply(k562.me3.bs,sum)
+me3.ave.sg<- lapply(1:length(k562.me3.bs),function(i)sapply(split(as.data.frame(k562.me3.bs[[i]]@.Data),k562.pk.dnase.1k$State),function(x)colMeans(x)*10^9/me3.seq.dp[[i]]))
+names(me3.ave.sg)<- k562.me3.f
+k562.me3.sg<- as.data.frame(rbind(me3.ave.sg$wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bed,me3.ave.sg$wgEncodeBroadHistoneK562H3k4me3StdAlnRep2.bed))
+k562.me3.sg$strand<- c(rep("Rep1",1000),rep("Rep2",1000))
+k562.me3.sg$name<- -500:499
+saveRDS(k562.me3.sg,file = "data/K562_me3_sg.rds")
+ggplot(melt(k562.me3.sg,id.var=c("strand","name")))+geom_line(aes(x=name,y=value,color=strand))+
+  facet_grid(variable~.,scales = "free")+
+  labs(x = "",y = " ",title="The average of H3K4me3 signal in 1kp regions",linetype="read") +
+  hy.theme
