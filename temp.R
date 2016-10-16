@@ -349,8 +349,8 @@ ggplot(as.data.frame(dnase.K562.NB.all.ds))+geom_histogram(aes(x=Dscore,y=..coun
 
 
 ###Dnase overlap
-macs.dnase.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/DNase/",pattern = "bed")
-macs.dnase<- lapply(macs.dnase.f,function(x)import.bed(paste0("/mnt/local-disk1/rsgeno2/MAmotif/DNase/",x)))
+macs.dnase.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/DNase/",pattern = "xls")[2:3]
+macs.dnase<- lapply(macs.dnase.f,function(x)readPeakFile(paste0("/mnt/local-disk1/rsgeno2/MAmotif/DNase/",x)))
 names(macs.dnase)<- macs.dnase.f
 sapply(macs.dnase,function(x)table(countOverlaps(dnase.K562,x)))
 enc.dnase.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/",pattern = "bed")[1:4]
@@ -358,3 +358,6 @@ enc.dnase<- lapply(enc.dnase.f,function(x)import.bed(paste0("/mnt/local-disk1/rs
 names(enc.dnase)<- enc.dnase.f
 sapply(enc.dnase, function(x)table(countOverlaps(dnase.K562,x)))
 
+###Roadmap broadpeaks
+bp.pk<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/Roadmap_H3K4me3_BroadPeak_annotated.rds")
+mcols(bp.pk$`ES-I3_Cell_Line`)[,c(3,)]
