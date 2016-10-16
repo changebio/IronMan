@@ -39,3 +39,25 @@ hy.theme<-   theme(plot.title = element_text(color="black", size=20, face="bold.
 ```
 
 
+
+=========================================================
+This Project self-define important funtion
+```{r region.base.signal}
+#The function can get a region signal coverage in single base
+#necessary parameter: input regions, list of genome coverage
+region.base.signal<- function(region,list.cov,strand=FALSE,weight.col=NULL,...){
+  if(strand){
+    cage.sg.p<-lapply(list.cov,function(x)ScoreMatrix(x,region[strand(region)=="+"],weight.col = weight.col))
+    cage.sg.m<-lapply(list.cov,function(x)ScoreMatrix(x,region[strand(region)=="-"],weight.col = weight.col))
+    cage.sg<- list(plus=cage.sg.p,minus=cage.sg.m)
+    
+  }else{
+    cage.sg<-lapply(list.cov,function(x)ScoreMatrix(x,region,weight.col = weight.col))
+    
+  }
+  return(cage.sg)
+}
+
+
+```
+
