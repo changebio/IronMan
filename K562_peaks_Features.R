@@ -238,3 +238,23 @@ ggplot(melt(k562.ase.sg,id.var=c("strand","name")))+geom_line(aes(x=name,y=value
   facet_grid(variable~.,scales = "free")+
   labs(x = "",y = " ",title="The average of DNase signal in 1kp regions") +
   hy.theme
+
+#Pol2
+k562.pol.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/RACK7/",pattern = "bed")[3:4]
+k562.pol.bed<- lapply(k562.pol.f, function(x)import.bed(paste0("/mnt/local-disk1/rsgeno2/MAmotif/RACK7/",x)))
+k562.pol.bed<- lapply(k562.pol.bed,function(x){seqlengths(x)<- seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
+names(k562.pol.bed)<- k562.pol.f
+k562.pol.cov<- lapply(k562.pol.bed,function(x)coverage(x,ifelse(strand(x)=="+",100,-100)))
+
+k562.pol.bs<- region.base.signal(k562.pk.dnase.1k,k562.pol.cov,strand=FALSE)
+pol.seq.dp<- lapply(k562.pol.bs,sum)
+pol.ave.sg<- lapply(1:length(k562.pol.bs),function(i)sapply(split(as.data.frame(k562.pol.bs[[i]]@.Data),k562.pk.dnase.1k$State),function(x)colMeans(x)*10^9/pol.seq.dp[[i]]))
+names(pol.ave.sg)<- k562.pol.f
+k562.pol.sg<- as.data.frame(rbind(pol.ave.sg$wgEncodeOpenChromChipK562Pol2AlnRep1.bed,pol.ave.sg$wgEncodeOpenChromChipK562Pol2AlnRep2.bed))
+k562.pol.sg$strand<- c(rep("Rep1",1000),rep("Rep2",1000))
+k562.pol.sg$name<- -500:499
+saveRDS(k562.pol.sg,file = "data/K562_pol_sg.rds")
+ggplot(melt(k562.pol.sg,id.var=c("strand","name")))+geom_line(aes(x=name,y=value,color=strand))+
+  facet_grid(variable~.,scales = "free")+
+  labs(x = "",y = " ",title="The average of Pol2 signal in 1kp regions") +
+  hy.theme
