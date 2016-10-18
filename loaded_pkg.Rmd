@@ -61,3 +61,15 @@ region.base.signal<- function(region,list.cov,strand=FALSE,weight.col=NULL,...){
 
 ```
 
+
+=========================================================
+brilliant function or packages
+```{r summarizeOverlaps}
+###summarizeOverlaps like htseq-count
+
+library(GenomicAlignments)
+example(summarizeOverlaps)
+features <- gr
+reads <- reads
+```
+
