@@ -130,4 +130,8 @@ k562.pk<- sort(k562.pk)
 export.bed(k562.pk,con="/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/K562_annotated_peaks.bed")
 
 
+#H3K4me1
+h3k4me1.bp<- readBroadPeak("/mnt/local-disk1/rsgeno2/MAmotif/macs2/H3K4me1/K562_H3K4me1_Rep1_peaks.broadPeak")
+
+
 
