@@ -225,8 +225,11 @@ k562.ase.bed<- lapply(k562.ase.f, function(x)import.bed(paste0("/mnt/local-disk1
 k562.ase.bed<- lapply(k562.ase.bed,function(x){seqlengths(x)<- seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
 names(k562.ase.bed)<- k562.ase.f
 k562.ase.cov<- lapply(k562.ase.bed,coverage)
+k562.dnase.bw<- import.bw("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/wgEncodeOpenChromDnaseK562BaseOverlapSignalV2.bigWig",asRle=TRUE)
+k562.dnase.sig<- import.bw("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/wgEncodeOpenChromDnaseK562SigV2.bigWig",asRle=TRUE)
+k562.ase.bs<- region.base.signal(k562.pk.dnase.1k,c(k562.ase.cov,list(K562Sig=k562.dnase.sig,K562BaseSig=k562.dnase.bw)),strand=FALSE)
+saveRDS(k562.ase.bs,file = "data/K562_Dnase_base_signal.rds")
 
-k562.ase.bs<- region.base.signal(k562.pk.dnase.1k,k562.ase.cov,strand=FALSE)
 ase.seq.dp<- lapply(k562.ase.bs,sum)
 ase.ave.sg<- lapply(1:length(k562.ase.bs),function(i)sapply(split(as.data.frame(k562.ase.bs[[i]]@.Data),k562.pk.dnase.1k$State),function(x)colMeans(x)*10^9/ase.seq.dp[[i]]))
 names(ase.ave.sg)<- k562.ase.f
@@ -239,22 +242,49 @@ ggplot(melt(k562.ase.sg,id.var=c("strand","name")))+geom_line(aes(x=name,y=value
   labs(x = "",y = " ",title="The average of DNase signal in 1kp regions") +
   hy.theme
 
+#summit position
+ase.smt.pos<- lapply(1:length(k562.ase.bs),function(i)sapply(split(as.data.frame(k562.ase.bs[[i]]@.Data[,425:575]),k562.pk.dnase.1k$State),function(x)apply(x,1,which.max)))
+names(ase.smt.pos)<- names(k562.ase.bs)
+
+
 #Pol2
-k562.pol.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/RACK7/",pattern = "bed")[3:4]
-k562.pol.bed<- lapply(k562.pol.f, function(x)import.bed(paste0("/mnt/local-disk1/rsgeno2/MAmotif/RACK7/",x)))
+k562.pol.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/SydhTfbsK562/",pattern = "Pol2")
+k562.pol.bed<- lapply(k562.pol.f, function(x)import.bw(paste0("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/SydhTfbsK562/",x)))
 k562.pol.bed<- lapply(k562.pol.bed,function(x){seqlengths(x)<- seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
 names(k562.pol.bed)<- k562.pol.f
 k562.pol.cov<- lapply(k562.pol.bed,function(x)coverage(x,ifelse(strand(x)=="+",100,-100)))
 
-k562.pol.bs<- region.base.signal(k562.pk.dnase.1k,k562.pol.cov,strand=FALSE)
+k562.pol.bs<- region.base.signal(k562.pk.dnase.1k,k562.pol.bed,strand=FALSE)
 pol.seq.dp<- lapply(k562.pol.bs,sum)
 pol.ave.sg<- lapply(1:length(k562.pol.bs),function(i)sapply(split(as.data.frame(k562.pol.bs[[i]]@.Data),k562.pk.dnase.1k$State),function(x)colMeans(x)*10^9/pol.seq.dp[[i]]))
 names(pol.ave.sg)<- k562.pol.f
-k562.pol.sg<- as.data.frame(rbind(pol.ave.sg$wgEncodeOpenChromChipK562Pol2AlnRep1.bed,pol.ave.sg$wgEncodeOpenChromChipK562Pol2AlnRep2.bed))
-k562.pol.sg$strand<- c(rep("Rep1",1000),rep("Rep2",1000))
+k562.pol.sg<- do.call(rbind.data.frame,pol.ave.sg)
+k562.pol.sg$strand<- rep(names(pol.ave.sg),each=1000)
 k562.pol.sg$name<- -500:499
 saveRDS(k562.pol.sg,file = "data/K562_pol_sg.rds")
 ggplot(melt(k562.pol.sg,id.var=c("strand","name")))+geom_line(aes(x=name,y=value,color=strand))+
-  facet_grid(variable~.,scales = "free")+
+  facet_grid(variable~strand,scales = "free")+
   labs(x = "",y = " ",title="The average of Pol2 signal in 1kp regions") +
+  hy.theme
+
+
+
+#K562 DNA Methylation
+sl725<- import("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Methyl/SL725.DCC.CGs.bed")
+mcols(sl725)<- as.numeric(sl725$blockSizes)
+sl726<- import("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Methyl/SL726.DCC.CGs.bed")
+mcols(sl726)<- as.numeric(sl726$blockSizes)
+k562.dna.met<- list(SL725=sl725,SL726=sl726)
+k562.dna.met<- lapply(k562.dna.met, function(x){seqlengths(x)<-seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
+k562.met.bs<- region.base.signal(k562.pk.dnase.1k,k562.dna.met,strand=FALSE,weight.col = "X")
+met.ave.sg<- lapply(1:length(k562.met.bs),function(i)sapply(split(as.data.frame(k562.met.bs[[i]]@.Data),k562.pk.dnase.1k$State),function(x)colMeans(x)))
+names(met.ave.sg)<- names(k562.met.bs)
+met.ave.sg<- lapply(met.ave.sg,function(x)t(sapply(seq(1,1000,50),function(i)colMeans(x[i:(i+49),]))))
+k562.met.sg<- do.call(rbind.data.frame,met.ave.sg)
+k562.met.sg$strand<- rep(names(met.ave.sg),each=20)
+k562.met.sg$name<- seq(-500,499,50)
+saveRDS(k562.met.sg,file = "data/K562_met_sg.rds")
+ggplot(melt(k562.met.sg,id.var=c("strand","name")))+geom_line(aes(x=name,y=value,color=strand))+
+  facet_grid(variable~.,scales = "free")+
+  labs(x = "",y = " ",title="The average of methylation CpG signal in 1kp regions") +
   hy.theme
