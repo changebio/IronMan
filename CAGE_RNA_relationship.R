@@ -73,7 +73,7 @@ ggplot(pd.m, aes(Sample,variable) ) +
 require(ggplot2)
 require(reshape2)
 
-temp.gd<-melt(temp,id.vars = c("Transcipt.ID","Gene.Symbol","wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed"))
+temp.gd<-melt(temp.act,id.vars = c("Transcipt.ID","Gene.Symbol","wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed"))
 ggplot(temp.gd)+geom_point(aes(x=wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed,y=value),alpha = 1/10)+
   scale_x_continuous(trans = "log2")+
   scale_y_continuous(trans = "log2")+
@@ -89,19 +89,7 @@ ggplot(temp.gd)+geom_point(aes(x=wgEncodeCaltechRnaSeqK562R1x75dAlignsRep1V2.bed
         strip.text.x = element_text(face = "bold",size = 16)
   )
 
+temp.act<- na.omit(temp[!(rownames(temp) %in% unique(k562.pk.dnase$SYMBOL[k562.pk.dnase$State=="actProm"])),])
 
-#region.base.signal---------
-region.base.signal<- function(region,cage.seq,strand=TRUE,weight.col=NULL,...){
-  if(strand){
-    cage.sg.p<-lapply(cage.seq,function(x)ScoreMatrix(x,region[strand(region)=="+"],weight.col = weight.col))
-    cage.sg.m<-lapply(cage.seq,function(x)ScoreMatrix(x,region[strand(region)=="-"],weight.col = weight.col))
-    cage.sg<- list(plus=cage.sg.p,minus=cage.sg.m)
-    
-  }else{
-    cage.sg<-lapply(cage.seq,function(x)ScoreMatrix(x,region,weight.col = weight.col))
-    
-  }
-  return(cage.sg)
-}
 
 

@@ -361,3 +361,36 @@ sapply(enc.dnase, function(x)table(countOverlaps(dnase.K562,x)))
 ###Roadmap broadpeaks
 bp.pk<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/Roadmap_H3K4me3_BroadPeak_annotated.rds")
 mcols(bp.pk$`ES-I3_Cell_Line`)[,c(3,)]
+
+
+##DNase center and summit
+a<- read.table("/mnt/local-disk1/rsgeno2/MAmotif/DNase/Dnase_common_peaks_Uw_rep1_rep2_K562.subpeaks.xls",header = TRUE)
+a<- makeGRangesFromDataFrame(a,keep.extra.columns = TRUE,starts.in.df.are.0based = TRUE)
+a$center<- start(resize(a,width = 1,fix = "center"))
+temp<- data.frame(Width=width(a),Distance=a$center-a$SummitPosition)
+ggplot(temp)+geom_histogram(aes(x=Distance))
+ggplot(temp)+geom_point(aes(x=Distance,y=Width,alpha=0.1))
+hm.gene<- genes(txdb)
+hm.gene.pro<- resize(hm.gene,width = 1)
+gene.dnase<- nearest(hm.gene.pro,a)
+aa<- a[na.omit(gene.dnase)]
+hm.gene.pro<- hm.gene.pro[!is.na(gene.dnase)]
+smt.ctr<- data.frame(Summit= aa$SummitPosition-start(hm.gene.pro),Center=aa$center-start(hm.gene.pro))
+smt.ctr<- smt.ctr[abs(smt.ctr$Summit)<200 & abs(smt.ctr$Center)<200,]
+ggplot(smt.ctr)+geom_point(aes(x=Summit,y=Center))
+
+
+dnase.K562.ctr<- resize(dnase.K562,width = 1,fix = "center")
+gene.dnase<- distanceToNearest(hm.gene,dnase.K562.ctr)
+dnase.K562.sub<- resize(dnase.K562.ctr[gene.dnase@subjectHits],width = 151,fix = "center")
+
+k562.ase.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/",pattern = "bed")[3:4]
+k562.ase.bed<- lapply(k562.ase.f, function(x)import.bed(paste0("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/",x)))
+k562.ase.bed<- lapply(k562.ase.bed,function(x){seqlengths(x)<- seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
+names(k562.ase.bed)<- k562.ase.f
+k562.ase.cov<- lapply(k562.ase.bed,coverage)
+k562.dnase.bw<- import.bw("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/wgEncodeOpenChromDnaseK562BaseOverlapSignalV2.bigWig",asRle=TRUE)
+k562.dnase.sig<- import.bw("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/2.DNase_Duke_hg19/wgEncodeOpenChromDnaseK562SigV2.bigWig",asRle=TRUE)
+dnase.K562.sub.bs<- region.base.signal(dnase.K562.sub,c(k562.ase.cov,list(K562Sig=k562.dnase.sig,K562BaseSig=k562.dnase.bw)),strand=FALSE)
+- 
+gene.dnase<-gene.dnase@elementMetadata@listData$distance

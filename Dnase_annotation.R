@@ -45,10 +45,11 @@ dnase.K562.anno$State<- "None"
 ind <- as.matrix(findOverlaps(dnase.K562.anno,k562.h1.manorm))
 dnase.K562.anno$State[ind[,1]]<- k562.h1.manorm$state[ind[,2]]
 dnase.K562.anno$Group<-with(dnase.K562.anno,paste(annotation,H3K4me3,H3K27ac,H3K4me1,State,sep = "."))
-saveRDS(dnase.K562.anno,file = "data/Dnase_K562_anno.rds")
+#saveRDS(dnase.K562.anno,file = "data/Dnase_K562_anno.rds")
+
 require(VennDiagram)
 grid.newpage()
-T<-venn.diagram(with(dnase.K562.anno,list(H3K4me3=which(H3K4me3),Promoter=which(Promoter),H3K27ac=which(H3K27ac),H3K4me1=which(H3K4me1))),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
+T<-venn.diagram(with(dnase.K562.anno,list(H3K4me3=which(H3K4me3=="None"),Promoter=which(Promoter),H3K27ac=which(H3K27ac=="None"),H3K4me1=which(H3K4me1=="None"))),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
 grid.draw(T)
 
 dnase.K562.anno.s<- resize(dnase.K562.anno,width = 500,fix = "center")
@@ -129,10 +130,10 @@ tf.bw.sbin<- lapply(21:40,function(i,tf){
   return(tf.cov)},tf=tf.bw.files.uni)
 
 names(tf.bw.sbin)<- tf.bw.files.uni[21:40]
-saveRDS(tf.bw.sbin,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/TF_bw_sbin_uni21-40.rds")
+#saveRDS(tf.bw.sbin,file = "/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/TF_bw_sbin_uni21-40.rds")
 
 
-saveRDS(tf.bw.sbin,file = "data/TF_bw_sbin_21-25.rds")
+#saveRDS(tf.bw.sbin,file = "data/TF_bw_sbin_21-25.rds")
 
 
 tf.bw.sbin.m<- 

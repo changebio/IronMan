@@ -1,0 +1,21 @@
+---
+title: "Projreport20160821"
+author: "hy"
+date: "8/21/2016"
+output: html_document
+---
+
+study non-promoter H3K4me3 in K562
+first part: introduction
+there are many study of H3K4me3 in promoter region. but almost didn't find the study of H3K4me3. we found that most H3K4me3 are in Promoter region
+in hESC, and there are an increase in non-promoter region in other cell lines. many of these non-promoter H3K4me3 co-occur with H3K4me1 and H3K27ac, which usually defined as active enhancer. they are short than the H3K4me3 peaks in promoter, which have studied that the genes with long H3K4me3 have stable expression. And they are cell-type specific.
+second part: ~~~~~~~~~~~~~~~~~~
+
+
+1.genomic distribution in different cell lines(so I need their peaks by runing Macs under the same condition)
+
+2.seperate peaks as promoter peaks and non-promoter peaks, look into their overlapping in different cell lines, respectively.
+
+3. motifscan in non-promoter peaks to study the relationship between H3K4me3 and RACK7
+
+4. use K562 and H1 as example, K562-only non-promoter enhancer H3K4me3 peak(1 increase a lot non-promoter H3K4me3, 2 most of the non-promoter H3K4me3 peaks are in enhancer)

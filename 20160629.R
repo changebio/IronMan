@@ -12,21 +12,40 @@ k562.h1.k4me3.manorm<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.201
 
 k562.gm12878.manorm <- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.Gm12878.H3K4me3.rep1.top20k.20160808/K562.Gm12878.H3K4me3.rep1.top20k.20160808_all_peak_MAvalues.xls",header=TRUE)
 k562.gm12878.manorm <- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/K562.Gm12878.H3K4me3.rep2.top20k.20160808/K562.Gm12878.H3K4me3.rep2.top20k.20160808_all_peak_MAvalues.xls",header=TRUE)
-temp<- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3/Helas3.H1.H3K4me3.rep2.top20k.20160809/Helas3.H1.H3K4me3.rep2.top20k.20160809_all_peak_MAvalues.xls",header=TRUE)
+temp <- readPeakFile("/mnt/local-disk1/rsgeno2/MAmotif/Roadmap/H3K4me3T20k/Mesendoderm.H1.top20k.20160811/Mesendoderm.H1.top20k.20160811_all_peak_MAvalues.xls",header=TRUE)
 k562.h1.k4me3.manorm<- temp
 
-k562.h1.k4me3.manorm<- dropSeqlevels(k562.h1.k4me3.manorm,"chrY")
-k562.h1.k4me3.manorm$K562<- k562.h1.k4me3.manorm$M_value>=-1
-k562.h1.k4me3.manorm$H1hesc<- k562.h1.k4me3.manorm$M_value<=1
-k562.h1.k4me3.manorm$Promoter<-countOverlaps(k562.h1.k4me3.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0
 CTSS.prom <- readRDS("data/CTSS_promoters.rds")
-k562.h1.k4me3.manorm$nonPromoter<-countOverlaps(k562.h1.k4me3.manorm,CTSS.prom)==0
+H1.H3K4me3.state<- function(k562.h1.k4me3.manorm){
+  k562.h1.k4me3.manorm<- dropSeqlevels(k562.h1.k4me3.manorm,"chrY")
+  k562.h1.k4me3.manorm$K562<- k562.h1.k4me3.manorm$M_value>=-1
+  k562.h1.k4me3.manorm$H1hesc<- k562.h1.k4me3.manorm$M_value<=1
+  k562.h1.k4me3.manorm$Promoter<-countOverlaps(k562.h1.k4me3.manorm,promoters(txdb,upstream = 2000,downstream = 2000))>0
+  k562.h1.k4me3.manorm$nonPromoter<-countOverlaps(k562.h1.k4me3.manorm,CTSS.prom)==0
+  return(k562.h1.k4me3.manorm)
+}
+k562.h1.k4me3.manorm<- H1.H3K4me3.state(k562.h1.k4me3.manorm)
 
 require(VennDiagram)
-grid.newpage()
-T<-venn.diagram(list(Promoter=which(k562.h1.k4me3.manorm$Promoter),Non_Promoter=which(k562.h1.k4me3.manorm$nonPromoter),K562=which(k562.h1.k4me3.manorm$K562),
-                     H1hesc=which(k562.h1.k4me3.manorm$H1hesc)),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
-grid.draw(T)
+require(gridExtra)
+h1.k4me3.file<-list.files("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3",pattern = "H1.H3K4me3.*?.xls",full.names = TRUE,recursive = TRUE)
+h1.k4me3.pks<- lapply(h1.k4me3.file,function(x)readPeakFile(x,header=TRUE))
+names(h1.k4me3.pks)<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/manorm.20160520/H3K4me3",pattern = "H1.H3K4me3.",full.names = FALSE)
+
+gs<- lapply(seq_along(h1.k4me3.pks), function(x, n, i){k562.h1.k4me3.manorm<- H1.H3K4me3.state(x[[i]]);
+                                                  temp<- list(Promoter=which(k562.h1.k4me3.manorm$Promoter),Non_Promoter=which(k562.h1.k4me3.manorm$nonPromoter),H1hesc=which(k562.h1.k4me3.manorm$H1hesc));
+                                                  temp[[unlist(strsplit(n[[i]],"[.]"))[1]]]<- which(k562.h1.k4me3.manorm$K562);
+                                                  grobTree(venn.diagram(temp,fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), filename=NULL)
+                                                  )} , x=h1.k4me3.pks, n=names(h1.k4me3.pks))
+grid.arrange(grobs=gs,ncol=5)
+file.remove(list.files(pattern = "VennDiagram*"))
+
+
+# grid.newpage()
+# T<-venn.diagram(list(Promoter=which(k562.h1.k4me3.manorm$Promoter),Non_Promoter=which(k562.h1.k4me3.manorm$nonPromoter),K562=which(k562.h1.k4me3.manorm$K562),
+#                      H1hesc=which(k562.h1.k4me3.manorm$H1hesc)),fill=c('darkorange', 'dodgerblue', 'hotpink', 'limegreen'), alpha=c(0.5,0.5,0.5,0.5), cex=2, filename=NULL)
+# grid.draw(T)
+
 
 k562.h1.k4me3.manorm$Prom<-"N"
 k562.h1.k4me3.manorm$Prom[countOverlaps(k562.h1.k4me3.manorm,CTSS.prom)>0]<-"V"

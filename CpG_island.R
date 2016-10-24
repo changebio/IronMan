@@ -9,3 +9,13 @@ cpgu<- makeGRangesFromDataFrame(cpgu,keep.extra.columns = TRUE,starts.in.df.are.
 
 temp<- countOverlaps(k562.pk.dnase,cpgu)
 table(temp,k562.pk.dnase$State)
+
+#chromHMM
+k562.hmm<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/wgEncodeAwgSegmentationSegwayK562.bed")
+
+a<- findOverlaps(k562.pk.dnase,k562.hmm,select = "arbitrary")
+table(k562.hmm$name[a],k562.pk.dnase$State)
+
+##
+k562.tf<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/ENCODE_AwgTfbs.hg19.txt")
+table(countOverlaps(k562.pk.dnase,k562.tf),k562.pk.dnase$)

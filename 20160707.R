@@ -8,7 +8,24 @@ k4me3.smt<- GRangesList(k4me3.smt)
 k4me3_gr<- stack(k4me3.smt)
 #read DNase narrow peaks------
 require(genomation)
+readNarrowPeak <- function(file){
+  readGeneric(file,
+              strand=6,
+              meta.cols=list(name=4,
+                             score=5,
+                             signalValue=7,
+                             pvalue=8,
+                             qvalue=9,
+                             peak=10),
+              header=FALSE,
+              zero.based=TRUE)
+}
+
 dnase.K562 <- readNarrowPeak("/mnt/local-disk1/rsgeno2/MAmotif/RACK7/routput/wgEncodeAwgDnaseUwdukeK562UniPk.narrowPeak/wgEncodeAwgDnaseUwdukeK562UniPk.narrowPeak")
+
+dnase.K562.NB <- subsetByOverlaps(dnase.K562,grl.k4me3.ma$N.B)
+dnase.K562.NB<- resize(dnase.K562.NB,width = 500,fix = "center")
+
 
 #gro1<- import.bed("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/K562_biol_rep123.hg19.ctss_minus_pool.bed")
 
@@ -26,8 +43,8 @@ ggplot(melt(k4me3.smt.dnase1[,c(1,3,5)]))+geom_line(aes(x=Var1,y=value,colour=Va
         axis.text.y = element_text(face="bold", size=14)
   )
 
-gro.seq<- lapply(list.files("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",pattern = ".bed"),function(x)readPeakFile(paste0("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",x)))
-names(gro.seq)<-list.files("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",pattern = ".bed")
+gro.seq<- lapply(list.files("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",pattern = ".bed$")[1:6],function(x)readPeakFile(paste0("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",x)))
+names(gro.seq)<-list.files("/mnt/local-disk1/rsgeno2/MAmotif/For_huang_K562_CAGE_GROseq/",pattern = ".bed$")[1:6]
 gro.seq<- lapply(gro.seq,function(x)dropSeqlevels(x,c("chrY","chrM")))
 
 # k4me3.gro<- lapply(gro.seq,function(gro){

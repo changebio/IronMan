@@ -18,8 +18,13 @@ Peaks.Promoter<- function(peaks,promoter){
 }
 
 Toppeaks<- function(x,top=20000){
-  pk<- x[order(-x[,7]),]
-  return(pk[1:min(top,nrow(x)),])
+  if(is.data.frame(x)){
+    pk<- x[order(-x[,9]),]
+    return(pk[1:min(top,nrow(x)),])
+  }else{
+    pk<- x[order(-mcols(x)[,4]),]
+    return(pk[1:min(top,length(x)),])
+  }
 }
 
 

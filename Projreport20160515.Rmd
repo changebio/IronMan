@@ -93,15 +93,37 @@ RNA-Seq data(K562 and H1hesc)
 k562.me3<- read.table("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K4me3/K562.H3k4me3.Rep2.macs.20151224_peaks.xls",header = TRUE)
 h1.me3<- read.table("/mnt/local-disk1/rsgeno2/MAmotif/macs.20151224/H3K4me3/H1.H3k4me3.Rep2.macs.20151224_peaks.xls",header = TRUE)
 Peaks.Distribution<- function(peaks,refhg19=refhg19){
-  peaks$state<- "Intergenic"
-  tp.promoter<- overlap(peaks,refhg19$PROMOTER)
-  peaks$state[tp.promoter[[1]]>0]<- "Promoter"
-  tp.exon<- overlap(peaks[peaks$state=="Intergenic",],refhg19$EXON)
-  peaks$state[peaks$state=="Intergenic"][tp.exon[[1]]>0]<- "Exon"
-  tp.intron<- overlap(peaks[peaks$state=="Intergenic",],refhg19$INTRON)
-  peaks$state[peaks$state=="Intergenic"][tp.intron[[1]]>0]<- "Intron"
+  if(is.data.frame(peaks)){
+    peaks$state <- "Intergenic"
+    tp.promoter <- overlap(peaks,refhg19$PROMOTER)
+    peaks$state[tp.promoter[[1]] > 0] <- "Promoter"
+    tp.exon <- overlap(peaks[peaks$state == "Intergenic",],refhg19$EXON)
+    peaks$state[peaks$state == "Intergenic"][tp.exon[[1]] > 0] <- "Exon"
+    tp.intron <- overlap(peaks[peaks$state == "Intergenic",],refhg19$INTRON)
+    peaks$state[peaks$state == "Intergenic"][tp.intron[[1]] > 0] <- "Intron"
+  }else{
+    if(is.environment(refhg19)){
+      peaks$state <- "Intergenic"
+      tp.promoter <- countOverlaps(peaks,promoters(refhg19,upstream = 2000,downstream = 2000))
+      peaks$state[tp.promoter > 0] <- "Promoter"
+      tp.exon <- countOverlaps(peaks[peaks$state == "Intergenic",],exons(refhg19))
+      peaks$state[peaks$state == "Intergenic"][tp.exon > 0] <- "Exon"
+      tp.intron <- countOverlaps(peaks[peaks$state == "Intergenic",],intronsByTranscript(refhg19))
+      peaks$state[peaks$state == "Intergenic"][tp.intron > 0] <- "Intron"
+    }else{
+      peaks$state <- "Intergenic"
+      tp.promoter <- countOverlaps(peaks,makeGRangesFromDataFrame(refhg19$PROMOTER))
+      peaks$state[tp.promoter > 0] <- "Promoter"
+      tp.exon <- countOverlaps(peaks[peaks$state == "Intergenic",],makeGRangesFromDataFrame(refhg19$EXON))
+      peaks$state[peaks$state == "Intergenic"][tp.exon > 0] <- "Exon"
+      tp.intron <- countOverlaps(peaks[peaks$state == "Intergenic",],makeGRangesFromDataFrame(refhg19$INTRON))
+      peaks$state[peaks$state == "Intergenic"][tp.intron > 0] <- "Intron"
+    }
+  }
+  
   return(peaks)
 }
+annotatePeak(h3k4me3[[1]], tssRegion=c(-2000, 2000), TxDb =txdb, annoDb="org.Hs.eg.db",genomicAnnotationPriority = c("Promoter","Exon", "Intron", "Intergenic"))
 k562.me3<- Peaks.Distribution(k562.me3,refhg19)
 h1.me3<- Peaks.Distribution(h1.me3,refhg19)
 op <- par(mfrow = c(1, 2), pty = "s")
@@ -129,20 +151,31 @@ Fisrt, Let's try to study questions 1.1 and 1.2
 ##we check the H3K4me3 peak distribution in different cell lines
 preprocess h3k4me3 data, get top 20k peaks by decreaseing p-vale and each state in different cell lines
 ```{r}
-load("/opt/rstudio/rstudio1/rstudio1/proj/IronMan/data/h3k4me3.Rdata")
 Toppeaks<- function(x,top=20000){
-  pk<- x[order(-x[,7]),]
-  return(pk[1:min(top,nrow(x)),])
+  if(is.data.frame(x)){
+    pk<- x[order(-x[,9]),]
+    return(pk[1:min(top,nrow(x)),])
+  }else{
+    pk<- x[order(-mcols(x)[,4]),]
+    return(pk[1:min(top,length(x)),])
+  }
 }
-h3k4me3.top<- lapply(h3k4me3,Toppeaks)
-len.k4me3<-melt(lapply(h3k4me3.top,function(x)return(x$end - x$start)))
-state.k4me3<- melt(lapply(h3k4me3.top,function(x)x$state))
-len.state.h3k4me3<- data.frame(Len=len.k4me3$value,State=state.k4me3$value,Name=len.k4me3$L1)
+
+
+# load("/opt/rstudio/rstudio1/rstudio1/proj/IronMan/data/h3k4me3.Rdata")
+# Toppeaks<- function(x,top=20000){
+#   pk<- x[order(-x[,7]),]
+#   return(pk[1:min(top,nrow(x)),])
+# }
+# h3k4me3.top<- lapply(h3k4me3,Toppeaks)
+# len.k4me3<-melt(lapply(h3k4me3.top,function(x)return(x$end - x$start)))
+# state.k4me3<- melt(lapply(h3k4me3.top,function(x)x$state))
+# len.state.h3k4me3<- data.frame(Len=len.k4me3$value,State=state.k4me3$value,Name=len.k4me3$L1)
 
 ```
 look into the H3K4me3 distribution in the whole genome to inverstigate the difference of H3K4me3 between normal and cancer cell lines 
 ```{r}
-ggplot(len.state.h3k4me3)+geom_bar(aes(x=Name,fill=State))+
+ggplot(len.state.h3k4me3)+geom_bar(aes(x=Name,fill=State),position = "fill")+
   labs(x = "",y = "",title="The H3K4me3 distribution in whole genome",fill="") +
   coord_flip()+
   theme(plot.title = element_text(color="black", size=20, face="bold.italic"),

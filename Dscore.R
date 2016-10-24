@@ -1,10 +1,67 @@
-#Dscore in different genomic features
+#################################################################
+# Direction by CAGE and GRO 
+# There are two parts
+# First: average signal
+# Second: Dscore
+#################################################################
+
 
 #load packages-----
 require(TxDb.Hsapiens.UCSC.hg19.knownGene)
 txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
 require(GenomicFeatures)
 require(genomation)
+
+# Part I: average signal
+##functions
+###---------------------------------
+region.cage.signal<- function(region,cage.seq,strand=TRUE,bin.num = 50,weight.col=NULL){
+  if(strand){
+    cage.sg.p<-lapply(cage.seq,function(x)ScoreMatrixBin(x,region[strand(region)=="+"],bin.num = bin.num,weight.col = weight.col))
+    cage.sg.m<-lapply(cage.seq,function(x)ScoreMatrixBin(x,region[strand(region)=="-"],bin.num = bin.num,weight.col = weight.col))
+    cage.sg<- melt(rbind(sapply(cage.sg.p,colMeans),sapply(cage.sg.m,colMeans)))
+    cage.sg$gene<- factor(c(rep("+",bin.num),rep("-",bin.num)),levels = c("+","-"))
+    cage.sg$read<- factor(c(rep("minus",2*bin.num),rep("plus",2*bin.num)),levels = c("plus","minus"))
+    cage.sg$type <- substring(cage.sg$Var2,first = 1,last = nchar(as.character(cage.sg$Var2))-c(rep(6,2*bin.num),rep(5,2*bin.num)))
+    cage.sg$Var1<- c(-24.5:24.5)*10
+  }else{
+    cage.sg<-lapply(cage.seq,function(x)ScoreMatrixBin(x,region,bin.num = bin.num,weight.col = weight.col))
+    cage.sg<- melt(sapply(cage.sg,colMeans))
+    cage.sg$gene<- factor(rep("*",bin.num),"*")
+    cage.sg$read<- factor(c(rep("minus",bin.num),rep("plus",bin.num)),levels = c("plus","minus"))
+    cage.sg$type <- substring(cage.sg$Var2,first = 1,last = nchar(as.character(cage.sg$Var2))-c(rep(6,bin.num),rep(5,bin.num)))
+    cage.sg$Var1<- c(-24.5:24.5)*10
+  }
+  return(cage.sg)
+}
+
+
+region.cage.signal.geom_line<- function(cage.sg,title="The average signal of CAGE",...){
+  require(ggplot2)
+  p<- ggplot(cage.sg)
+  if(length(levels(cage.sg$gene))==1){
+    p<- p + geom_line(aes(x=Var1,y=value,linetype= read))
+  }else{
+    p<- p + geom_line(data=cage.sg[cage.sg$gene=="+",],aes(x=Var1,y=value,colour=gene,linetype=read)) + geom_line(data=cage.sg[cage.sg$gene=="-",],aes(x=Var1,y=-value,colour=gene,linetype=read))
+  }
+  p<- p + scale_color_manual(values=c("#0099FF","#FF6600"))+
+    facet_wrap( ~ type)+
+    labs(x = "",y = " ",title=title) +
+    theme(plot.title = element_text(color="black", size=20, face="bold.italic"),
+          axis.title.x = element_text( face="bold",size=14),
+          axis.title.y = element_text(color="black", size=14, face="bold"),
+          legend.title =element_text(face = "bold", size = 14, color = "black"),
+          legend.text = element_text(face = "bold", size = 12),
+          axis.text.x = element_text(face="bold",size=14),
+          axis.text.y = element_text(face="bold", size=14),
+          strip.text.x = element_text(face = "bold",size = 16)
+    )
+  p
+}
+
+###================================
+
+
 
 #gene signal calculation
 ##gro and cage signal distribution in promoters
@@ -63,11 +120,16 @@ ggplot(gro.cage.sg)+geom_line(data=gro.cage.sg[gro.cage.sg$gene=="+",],aes(x=Var
         axis.text.y = element_text(face="bold", size=14),
         strip.text.x = element_text(face = "bold",size = 16)
   )
-### the average sigal for all merged cage
+
+### the average signal of CAGE bigWig from ENCODE
+cage.bw<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/cage_bw.rds")
+
+### the average signal for all merged cage
 ucsc.gene<- genes(txdb)
 ucsc.gene.pt<- promoters(ucsc.gene,upstream = 250,downstream = 250)
 all.gr.m<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_minus_pool.rds")
 all.gr.p<- readRDS("/mnt/local-disk1/rsgeno2/huangyin/Rstudio/Iranman/data/hg19.ctss_all_plus_pool.rds")
+
 all.sg.p<-lapply(list(all.gr.m,all.gr.p),function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="+"],bin.num = 50,weight.col = "V5"))
 all.sg.m<-lapply(list(all.gr.m,all.gr.p),function(x)ScoreMatrixBin(x,ucsc.gene.pt[strand(ucsc.gene.pt)=="-"],bin.num = 50,weight.col = "V5"))
 
@@ -93,10 +155,11 @@ ggplot(all.sg)+geom_line(data=all.sg[all.sg$gene=="+",],aes(x=Var1,y=value,colou
 
 ##other signal distribution (H3K4me3,H3K4me1,....)
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#part 2 Dscore =========================
 
-
-#Dscore function-----
-Dscore<- function(plus,minus,windows,wt = NULL){
+##Dscore function
+Dscore<- function(plus,minus,windows,wt = NULL,cutoff=0){
   plus<- ScoreMatrixBin(plus,windows,weight.col = wt,bin.num = 2 )
   minus<- ScoreMatrixBin(minus,windows,weight.col = wt,bin.num = 2)
   index<- intersect(rownames(plus),rownames(minus))
@@ -105,11 +168,24 @@ Dscore<- function(plus,minus,windows,wt = NULL){
   minus<- rowSums(minus[index])*width(windows)
   Dscore<- (plus-minus)/(plus+minus)
   mcols(windows)<- DataFrame(plus,minus,Dscore)
-  return(windows)
+  return(windows[plus+minus > cutoff])
+}
+
+region.cage.Dscore<- function(region,cage.seq,wt = "V5",cutoff=6){
+  names(region)<- 1:length(region)
+  gc.ds<- lapply(seq(from=1,to=length(cage.seq),by=2),function(i,y)Dscore(y[[i+1]],y[[i]],region,wt = "V5",cutoff = cutoff),y=cage.seq)
+  names(gc.ds)<- substring(names(cage.seq),first = 1,last = nchar(names(cage.seq))-c(6,5))[seq(from=1,to=length(cage.seq),by=2)]
+  gc.ds.idx<- Reduce(intersect,lapply(gc.ds,names))
+  gene.ds<- sapply(gc.ds,function(x)x[gc.ds.idx]$Dscore)
+  gene.ds<- as.data.frame(gene.ds)
+  gene.ds$strand<- as.character(strand(region[gc.ds.idx]))
+  gene.ds.gp<-melt(gene.ds)
+  return(gene.ds.gp)
 }
 
 
-#Dscore distribution in region 500bp-----------
+
+###Dscore distribution in region 500bp
 ucsc.gene<- genes(txdb)
 ucsc.gene.pt<- promoters(ucsc.gene,upstream = 250,downstream = 250)
 names(gro.seq)<- substring(names(gro.seq),first = 1,last = nchar(names(gro.seq))-9)

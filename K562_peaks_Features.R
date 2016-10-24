@@ -248,8 +248,8 @@ names(ase.smt.pos)<- names(k562.ase.bs)
 
 
 #Pol2
-k562.pol.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/SydhTfbsK562/",pattern = "Pol2")
-k562.pol.bed<- lapply(k562.pol.f, function(x)import.bw(paste0("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/SydhTfbsK562/",x)))
+k562.pol.f<- list.files("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/",pattern = "Pol2")
+k562.pol.bed<- lapply(k562.pol.f, function(x)import.bw(paste0("/mnt/local-disk1/rsgeno2/MAmotif/ENCODE/Tfbs/",x),asRle=TRUE))
 k562.pol.bed<- lapply(k562.pol.bed,function(x){seqlengths(x)<- seqlengths(Hsapiens)[as.character(seqlevels(x))];return(x)})
 names(k562.pol.bed)<- k562.pol.f
 k562.pol.cov<- lapply(k562.pol.bed,function(x)coverage(x,ifelse(strand(x)=="+",100,-100)))

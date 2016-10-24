@@ -1,0 +1,19 @@
+---
+title: "Projreport20160724"
+author: "hy"
+date: "7/21/2016"
+output: html_document
+---
+
+The prediction affect
+
+
+How to choice the region width and tag cutoff
+
+
+the region width of judging direction shoud be from 120 to 250, because the corrected ratio decreased and the region number slightly increased with increasing the region width   
+
+
+the prediction in six group region
+
+
