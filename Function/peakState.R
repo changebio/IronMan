@@ -1,7 +1,11 @@
 ### =========================================================================
 ### peakState()
 ### -------------------------------------------------------------------------
-
+#' this is a silly function
+#' @param input1 this is an input to our function
+#' @param input2 this is another input
+#' @return some value
+#' @export
 
 peakStatebylap <- function(query,malist,subjlist){
   if(!is.null(malist)){
@@ -20,8 +24,8 @@ peakStatebylap <- function(query,malist,subjlist){
   return(query)
 }
 
-tpp<- peakStatebylap(k562.h1.k4me3.manorm,c(H3K4me1=k562.h1.k4me1.manorm,H3K27ac=k562.h1.k27ac.manorm),c(K562SE=K562.SE,H1SE=H1.SE))
-tpp
+#tpp<- peakStatebylap(k562.h1.k4me3.manorm,c(H3K4me1=k562.h1.k4me1.manorm,H3K27ac=k562.h1.k27ac.manorm),c(K562SE=K562.SE,H1SE=H1.SE))
+#tpp
 
 
 setMAvalbylap<- function(query,masub,type="M_value"){
